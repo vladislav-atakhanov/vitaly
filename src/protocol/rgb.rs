@@ -1,5 +1,5 @@
-use palette::FromColor;
-use palette::{Hsv, Srgb};
+use palette::rgb::Rgb;
+use palette::{FromColor, Hsv, Srgb};
 use std::cmp::min;
 use std::fmt;
 
@@ -19,8 +19,18 @@ pub fn rgb_to_hsv(
     let hsv: Hsv = Hsv::from_color(ru8);
     let hu8: Hsv<_, u8> = hsv.into_format::<u8>();
     let (h, s, v) = hu8.into_components();
-    let normal_brightness = ((v as f64) * (max_brightness as f64) / 255.0) as u8;
+    let normal_brightness = ((v as f64) * (max_brightness as f64) / 255.0).round() as u8;
     Ok((h.into_inner(), s, normal_brightness))
+}
+
+pub fn hsv_to_rgb(h: u8, s: u8, v: u8, max_brightness: u8) -> String {
+    let normal_brightness = ((v as f64) / (max_brightness as f64) * 255.0).round() as u8;
+    let hsv8: Hsv<_, u8> = Hsv::<Srgb, u8>::from_components((h, s, normal_brightness));
+    let hsv: Hsv<Rgb, f32> = hsv8.into_format();
+    let rgb: Rgb<Rgb> = Rgb::from_color(hsv);
+    let rgb8: Rgb<_, u8> = rgb.into_format::<u8>();
+    let (r, g, b) = rgb8.into_components();
+    format!("#{:02x}{:02x}{:02x}", r, g, b)
 }
 
 #[derive(Debug)]
@@ -120,8 +130,16 @@ impl fmt::Display for RGBInfo {
         writeln!(f, "\teffect_speed: {}", self.effect_speed)?;
         writeln!(
             f,
-            "\tcolor_hsv: (h={}, s={}, v={})",
-            self.color_h, self.color_s, self.color_v
+            "\tcolor: (h={}, s={}, v={}) - {}",
+            self.color_h,
+            self.color_s,
+            self.color_v,
+            hsv_to_rgb(
+                self.color_h,
+                self.color_s,
+                self.color_v,
+                self.max_brightness
+            )
         )?;
         Ok(())
     }
