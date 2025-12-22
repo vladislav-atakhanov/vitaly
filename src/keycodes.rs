@@ -1,3 +1,4 @@
+use anyhow::Result;
 use thiserror::Error;
 
 mod v5;
@@ -205,7 +206,7 @@ fn parse_num(num: &String) -> Result<u16, KeyParsingError> {
     }
 }
 
-pub fn name_to_qid(name: &str, vial_version: u32) -> Result<u16, Box<dyn std::error::Error>> {
+pub fn name_to_qid(name: &str, vial_version: u32) -> Result<u16> {
     match vial_version {
         6 | 0 => v6::name_to_qid(name),
         _ => v5::name_to_qid(name),

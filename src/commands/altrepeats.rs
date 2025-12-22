@@ -1,5 +1,6 @@
 use crate::common;
 use crate::protocol;
+use anyhow::Result;
 use hidapi::{DeviceInfo, HidApi};
 
 pub fn run(
@@ -7,7 +8,7 @@ pub fn run(
     device: &DeviceInfo,
     number: Option<u8>,
     value: &Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;

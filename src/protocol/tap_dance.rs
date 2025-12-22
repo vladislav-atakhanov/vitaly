@@ -3,6 +3,7 @@ use crate::protocol::{
     CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_TAP_DANCE_GET,
     DYNAMIC_VIAL_TAP_DANCE_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 use thiserror::Error;
@@ -22,14 +23,10 @@ pub struct TapDance {
 }
 
 impl TapDance {
-    pub fn from_string(
-        index: u8,
-        value: &str,
-        vial_version: u32,
-    ) -> Result<TapDance, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<TapDance> {
         let (keys_string, output) = value
             .split_once("~")
-            .ok_or("tapping term in ms should be passed after ~")?;
+            .ok_or(anyhow!("tapping term in ms should be passed after ~"))?;
         let tapping_term: u16 = output.replace(" ", "").parse()?;
         let keys: Vec<_> = keys_string.split("+").collect();
 
@@ -47,28 +44,24 @@ impl TapDance {
         })
     }
 
-    pub fn from_json(
-        index: u8,
-        tap_dances_json: &Value,
-        vial_version: u32,
-    ) -> Result<TapDance, Box<dyn std::error::Error>> {
+    pub fn from_json(index: u8, tap_dances_json: &Value, vial_version: u32) -> Result<TapDance> {
         let mut ks: [u16; 5] = [0x0; 5];
         let values = tap_dances_json
             .as_array()
-            .ok_or("TapDances should be encoded into array")?;
+            .ok_or(anyhow!("TapDances should be encoded into array"))?;
         for (pos, val) in values.iter().enumerate() {
             match pos {
                 0..=3 => {
                     let value_string = val
                         .as_str()
-                        .ok_or("TapDance elements 0-3 should be strings")?;
+                        .ok_or(anyhow!("TapDance elements 0-3 should be strings"))?;
                     let qid = keycodes::name_to_qid(value_string, vial_version)?;
                     ks[pos] = qid
                 }
                 4 => {
                     ks[pos] = val
                         .as_u64()
-                        .ok_or("TapDance 3th element should be positive number")?
+                        .ok_or(anyhow!("TapDance 3th element should be positive number"))?
                         as u16
                 }
                 _ => {
@@ -139,10 +132,7 @@ impl TapDance {
     }
 }
 
-pub fn load_tap_dances(
-    device: &HidDevice,
-    count: u8,
-) -> Result<Vec<TapDance>, Box<dyn std::error::Error>> {
+pub fn load_tap_dances(device: &HidDevice, count: u8) -> Result<Vec<TapDance>> {
     let mut tapdances: Vec<TapDance> = vec![];
     for idx in 0..count {
         match send_recv(
@@ -178,21 +168,18 @@ pub fn load_tap_dances(
 pub fn load_tap_dances_from_json(
     tap_dances_json: &Value,
     vial_version: u32,
-) -> Result<Vec<TapDance>, Box<dyn std::error::Error>> {
+) -> Result<Vec<TapDance>> {
     let mut result = Vec::new();
     let tap_dances = tap_dances_json
         .as_array()
-        .ok_or("TapDances should be encoded as array")?;
+        .ok_or(anyhow!("TapDances should be encoded as array"))?;
     for (i, tap_dance) in tap_dances.iter().enumerate() {
         result.push(TapDance::from_json(i as u8, tap_dance, vial_version)?)
     }
     Ok(result)
 }
 
-pub fn set_tap_dance(
-    device: &HidDevice,
-    tapdance: &TapDance,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_tap_dance(device: &HidDevice, tapdance: &TapDance) -> Result<()> {
     match send(
         device,
         &[
@@ -217,10 +204,7 @@ pub fn set_tap_dance(
     }
 }
 
-pub fn tap_dances_to_json(
-    tap_dances: &Vec<TapDance>,
-    vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn tap_dances_to_json(tap_dances: &Vec<TapDance>, vial_version: u32) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for tap_dance in tap_dances {
         result.push(json!([

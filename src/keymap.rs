@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow};
 pub mod buffer;
 
 use crate::protocol;
@@ -55,7 +56,7 @@ fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
     }
 }
 
-pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Error>> {
+pub fn get_encoders_count(keymap: &Value) -> Result<u8> {
     let mut result = 0;
     if let Some(rows) = keymap.as_array() {
         for row in rows.iter() {
@@ -82,11 +83,13 @@ pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Erro
 pub fn keymap_to_buttons(
     keymap: &Value,
     current_options: &protocol::LayoutOptions,
-) -> Result<Vec<Button>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Button>> {
     let via_options = current_options.via_options();
     let mut option_groups = HashMap::<u8, (f64, f64)>::new();
     let mut buttons = Vec::new();
-    let rows = keymap.as_array().ok_or("keymap should be an array")?;
+    let rows = keymap
+        .as_array()
+        .ok_or(anyhow!("keymap should be an array"))?;
     let mut x_pos = 0f64;
     let mut y_pos = 0f64;
     let mut x_mod = 0f64;
@@ -110,29 +113,46 @@ pub fn keymap_to_buttons(
                             for (key, value) in item {
                                 match key.as_str() {
                                     "x" => {
-                                        x = value.as_f64().ok_or("x should be a number")?;
+                                        x = value
+                                            .as_f64()
+                                            .ok_or(anyhow!("x should be a number"))?;
                                         x_mod += x;
                                     }
                                     "y" => {
-                                        y = value.as_f64().ok_or("y should be a number")?;
+                                        y = value
+                                            .as_f64()
+                                            .ok_or(anyhow!("y should be a number"))?;
                                         y_mod += y;
                                     }
-                                    "w" => w = value.as_f64().ok_or("w should be a number")?,
-                                    "h" => h = value.as_f64().ok_or("h should be a number")?,
-                                    "r" => r = value.as_f64().ok_or("r should be a number")?,
+                                    "w" => {
+                                        w = value.as_f64().ok_or(anyhow!("w should be a number"))?
+                                    }
+                                    "h" => {
+                                        h = value.as_f64().ok_or(anyhow!("h should be a number"))?
+                                    }
+                                    "r" => {
+                                        r = value.as_f64().ok_or(anyhow!("r should be a number"))?
+                                    }
                                     "rx" => {
-                                        rx = value.as_f64().ok_or("rx should be a number")?;
+                                        rx = value
+                                            .as_f64()
+                                            .ok_or(anyhow!("rx should be a number"))?;
                                         cluster.0 = rx;
                                         //x = cluster.0;
                                         //y = cluster.1;
                                     }
                                     "ry" => {
-                                        ry = value.as_f64().ok_or("ry should be a number")?;
+                                        ry = value
+                                            .as_f64()
+                                            .ok_or(anyhow!("ry should be a number"))?;
                                         cluster.1 = ry;
                                         //x = cluster.0;
                                         //y = cluster.1;
                                     }
-                                    "d" => decal = value.as_bool().ok_or("d should be bool")?,
+                                    "d" => {
+                                        decal =
+                                            value.as_bool().ok_or(anyhow!("d should be bool"))?
+                                    }
                                     &_ => {
                                         // println!("warning ignored value {:?} = {:?}", key, value)
                                     }

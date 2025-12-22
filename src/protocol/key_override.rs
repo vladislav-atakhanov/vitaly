@@ -3,6 +3,7 @@ use crate::protocol::{
     CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_KEY_OVERRIDE_GET,
     DYNAMIC_VIAL_KEY_OVERRIDE_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 
@@ -51,11 +52,7 @@ impl KeyOverride {
         options
     }
 
-    pub fn from_string(
-        index: u8,
-        value: &str,
-        vial_version: u32,
-    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<KeyOverride> {
         let spaceless = value.replace(" ", "");
         let keys: Vec<&str> = spaceless.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -75,7 +72,9 @@ impl KeyOverride {
 
         if !keys.is_empty() {
             for part in keys {
-                let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
+                let (left, right) = part
+                    .split_once("=")
+                    .ok_or(anyhow!("each part should contain ="))?;
                 match left {
                     "trigger" | "t" => {
                         trigger = keycodes::name_to_qid(right, vial_version)?;
@@ -166,7 +165,7 @@ impl KeyOverride {
         index: u8,
         key_override_json: &Value,
         vial_version: u32,
-    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+    ) -> Result<KeyOverride> {
         let mut trigger = 0u16;
         let mut replacement = 0u16;
         let mut layers = 0u16;
@@ -183,44 +182,54 @@ impl KeyOverride {
 
         let key_override = key_override_json
             .as_object()
-            .ok_or("key_override element should be an object")?;
+            .ok_or(anyhow!("key_override element should be an object"))?;
         for (key, value) in key_override {
             match key.as_str() {
                 "trigger" => {
                     trigger = keycodes::name_to_qid(
-                        value.as_str().ok_or("trigger value should be string")?,
+                        value
+                            .as_str()
+                            .ok_or(anyhow!("trigger value should be string"))?,
                         vial_version,
                     )?;
                 }
                 "replacement" => {
                     replacement = keycodes::name_to_qid(
-                        value.as_str().ok_or("replacement value should be string")?,
+                        value
+                            .as_str()
+                            .ok_or(anyhow!("replacement value should be string"))?,
                         vial_version,
                     )?;
                 }
                 "layers" => {
-                    layers = value.as_u64().ok_or("layer value should be a number")? as u16;
+                    layers = value
+                        .as_u64()
+                        .ok_or(anyhow!("layer value should be a number"))?
+                        as u16;
                 }
                 "trigger_mods" => {
                     trigger_mods = value
                         .as_u64()
-                        .ok_or("trigger_mods value should be a number")?
+                        .ok_or(anyhow!("trigger_mods value should be a number"))?
                         as u8;
                 }
                 "negative_mod_mask" => {
                     negative_mod_mask = value
                         .as_u64()
-                        .ok_or("negative_mod_mask value should be a number")?
+                        .ok_or(anyhow!("negative_mod_mask value should be a number"))?
                         as u8;
                 }
                 "suppressed_mods" => {
                     suppressed_mods = value
                         .as_u64()
-                        .ok_or("suppressed_mods value should be a number")?
+                        .ok_or(anyhow!("suppressed_mods value should be a number"))?
                         as u8;
                 }
                 "options" => {
-                    let options = value.as_u64().ok_or("options value should be a number")? as u16;
+                    let options = value
+                        .as_u64()
+                        .ok_or(anyhow!("options value should be a number"))?
+                        as u16;
                     ko_option_activation_trigger_down = options & (1 << 0) == (1 << 0);
                     ko_option_activation_required_mod_down = options & (1 << 1) == (1 << 1);
                     ko_option_activation_negative_mod_up = options & (1 << 2) == (1 << 2);
@@ -346,10 +355,10 @@ impl KeyOverride {
 pub fn load_key_overrides_from_json(
     key_overrides_json: &Value,
     vial_version: u32,
-) -> Result<Vec<KeyOverride>, Box<dyn std::error::Error>> {
+) -> Result<Vec<KeyOverride>> {
     let key_overrides = key_overrides_json
         .as_array()
-        .ok_or("key_override should be an array")?;
+        .ok_or(anyhow!("key_override should be an array"))?;
     let mut result = Vec::new();
     for (i, key_override) in key_overrides.iter().enumerate() {
         result.push(KeyOverride::from_json(i as u8, key_override, vial_version)?);
@@ -357,10 +366,7 @@ pub fn load_key_overrides_from_json(
     Ok(result)
 }
 
-pub fn load_key_overrides(
-    device: &HidDevice,
-    count: u8,
-) -> Result<Vec<KeyOverride>, Box<dyn std::error::Error>> {
+pub fn load_key_overrides(device: &HidDevice, count: u8) -> Result<Vec<KeyOverride>> {
     let mut keyoverrides: Vec<KeyOverride> = vec![];
     for idx in 0..count {
         match send_recv(
@@ -401,10 +407,7 @@ pub fn load_key_overrides(
     Ok(keyoverrides)
 }
 
-pub fn set_key_override(
-    device: &HidDevice,
-    keyoverride: &KeyOverride,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_key_override(device: &HidDevice, keyoverride: &KeyOverride) -> Result<()> {
     match send(
         device,
         &[
@@ -431,7 +434,7 @@ pub fn set_key_override(
 pub fn key_overrides_to_json(
     key_overrides: &Vec<KeyOverride>,
     vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for key_override in key_overrides {
         result.push(json!({

@@ -3,6 +3,7 @@ use crate::protocol::{
     CMD_VIAL_QMK_SETTINGS_RESET, CMD_VIAL_QMK_SETTINGS_SET, MESSAGE_LENGTH, ProtocolError,
     send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Map, Value};
 use std::cmp::max;
@@ -14,7 +15,7 @@ pub fn load_qmk_definitions() -> serde_json::Result<serde_json::Value> {
     Ok(qmk_settings)
 }
 
-pub fn load_qmk_qsids(device: &HidDevice) -> Result<Vec<u16>, Box<dyn std::error::Error>> {
+pub fn load_qmk_qsids(device: &HidDevice) -> Result<Vec<u16>> {
     let mut cur = 0u16;
     let mut qsids = Vec::new();
     'o: loop {
@@ -58,11 +59,7 @@ impl QmkValue {
     }
 }
 
-pub fn get_qmk_value(
-    device: &HidDevice,
-    qsid: u16,
-    width: u8,
-) -> Result<QmkValue, Box<dyn std::error::Error>> {
+pub fn get_qmk_value(device: &HidDevice, qsid: u16, width: u8) -> Result<QmkValue> {
     match send_recv(
         device,
         &[
@@ -93,11 +90,7 @@ pub fn get_qmk_value(
     }
 }
 
-pub fn set_qmk_value(
-    device: &HidDevice,
-    qsid: u16,
-    value: u32,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_qmk_value(device: &HidDevice, qsid: u16, value: u32) -> Result<()> {
     let buff: [u8; 8] = [
         CMD_VIA_VIAL_PREFIX,
         CMD_VIAL_QMK_SETTINGS_SET,
@@ -121,24 +114,24 @@ pub fn set_qmk_value(
     }
 }
 
-pub fn load_qmk_settings(
-    device: &HidDevice,
-) -> Result<HashMap<u16, QmkValue>, Box<dyn std::error::Error>> {
+pub fn load_qmk_settings(device: &HidDevice) -> Result<HashMap<u16, QmkValue>> {
     let mut result = HashMap::new();
     let sids = load_qmk_qsids(device)?;
     let definitions = load_qmk_definitions()?;
     for group in definitions["tabs"]
         .as_array()
-        .ok_or("tabs should be an array")?
+        .ok_or(anyhow!("tabs should be an array"))?
     {
         for field in group["fields"]
             .as_array()
-            .ok_or("fields should be an array")?
+            .ok_or(anyhow!("fields should be an array"))?
         {
-            let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
+            let qsid = field["qsid"]
+                .as_u64()
+                .ok_or(anyhow!("qsid should be a number"))? as u16;
             if sids.contains(&qsid) {
                 let width: u8 = match &field["width"] {
-                    Value::Number(n) => n.as_u64().ok_or("width shoulbe a number")? as u8,
+                    Value::Number(n) => n.as_u64().ok_or(anyhow!("width shoulbe a number"))? as u8,
                     _ => 1,
                 };
                 let value = get_qmk_value(device, qsid, width)?;
@@ -149,7 +142,7 @@ pub fn load_qmk_settings(
     Ok(result)
 }
 
-pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+pub fn reset_qmk_values(device: &HidDevice) -> Result<()> {
     let buff: [u8; 2] = [CMD_VIA_VIAL_PREFIX, CMD_VIAL_QMK_SETTINGS_RESET];
     match send_recv(device, &buff) {
         Ok(buff) => {
@@ -164,24 +157,20 @@ pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Er
     }
 }
 
-pub fn load_qmk_settings_from_json(
-    settings_json: &Value,
-) -> Result<HashMap<u16, QmkValue>, Box<dyn std::error::Error>> {
+pub fn load_qmk_settings_from_json(settings_json: &Value) -> Result<HashMap<u16, QmkValue>> {
     let mut result = HashMap::new();
     let settings = settings_json
         .as_object()
-        .ok_or("Settings should be an object")?;
+        .ok_or(anyhow!("Settings should be an object"))?;
     for (key, value) in settings {
         let qsid: u16 = key.parse()?;
-        let val = value.as_u64().ok_or("value shoudld be u32")? as u32;
+        let val = value.as_u64().ok_or(anyhow!("value shoudld be u32"))? as u32;
         result.insert(qsid, QmkValue { value: val });
     }
     Ok(result)
 }
 
-pub fn qmk_settings_to_json(
-    values: &HashMap<u16, QmkValue>,
-) -> Result<Value, Box<dyn std::error::Error>> {
+pub fn qmk_settings_to_json(values: &HashMap<u16, QmkValue>) -> Result<Value> {
     let mut result = Map::new();
     for (key, value) in values {
         result.insert(key.to_string(), value.get().into());

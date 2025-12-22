@@ -1,6 +1,7 @@
 use crate::common;
 use crate::keycodes;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 
 pub fn run(
@@ -10,17 +11,17 @@ pub fn run(
     layer: u8,
     position: &str,
     value: &Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
     let meta = common::load_meta(&dev, &capabilities, meta_file)?;
     let cols = meta["matrix"]["cols"]
         .as_u64()
-        .ok_or("matrix/cols not found in meta")? as u8;
+        .ok_or(anyhow!("matrix/cols not found in meta"))? as u8;
     let rows = meta["matrix"]["rows"]
         .as_u64()
-        .ok_or("matrix/rows not found in meta")? as u8;
+        .ok_or(anyhow!("matrix/rows not found in meta"))? as u8;
 
     let row: u8;
     let col: u8;

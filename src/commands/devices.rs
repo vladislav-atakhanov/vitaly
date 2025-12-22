@@ -1,11 +1,8 @@
 use crate::protocol;
+use anyhow::Result;
 use hidapi::{DeviceInfo, HidApi};
 
-pub fn run(
-    api: &HidApi,
-    device: &DeviceInfo,
-    capabilities: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(api: &HidApi, device: &DeviceInfo, capabilities: bool) -> Result<()> {
     if capabilities {
         let device_path = device.path();
         let dev = api.open_path(device_path)?;

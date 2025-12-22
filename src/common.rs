@@ -1,6 +1,7 @@
 use crate::keycodes;
 use crate::keymap;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -16,7 +17,7 @@ pub fn load_meta(
     dev: &HidDevice,
     capabilities: &protocol::Capabilities,
     meta_file: &Option<String>,
-) -> Result<Value, Box<dyn std::error::Error>> {
+) -> Result<Value> {
     match meta_file {
         Some(meta_file) => {
             //println!("loading meta from file {:?}", &meta_file);
@@ -53,7 +54,7 @@ pub fn render_layer(
     layer_number: u8,
     vial_version: u32,
     custom_keycodes: &Option<&Value>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let mut button_labels = HashMap::new();
 
     let custom = if let Some(custom) = custom_keycodes {
@@ -63,11 +64,11 @@ pub fn render_layer(
                 for (idx, code) in custom.iter().enumerate() {
                     let name = code
                         .as_object()
-                        .ok_or("customKeycode elements should be objects")?
+                        .ok_or(anyhow!("customKeycode elements should be objects"))?
                         .get("shortName")
-                        .ok_or("shortName should be defined")?
+                        .ok_or(anyhow!("shortName should be defined"))?
                         .as_str()
-                        .ok_or("shortName should be a string")?
+                        .ok_or(anyhow!("shortName should be a string"))?
                         .replace('\n', " ");
                     result.push(format!("QK_KB_{} - {}", idx, name));
                 }

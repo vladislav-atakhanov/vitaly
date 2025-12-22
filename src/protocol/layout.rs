@@ -2,6 +2,7 @@ use crate::protocol::{
     CMD_VIA_GET_KEYBOARD_VALUE, CMD_VIA_SET_KEYBOARD_VALUE, ProtocolError, VIA_LAYOUT_OPTIONS,
     VIA_UNHANDLED, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::Value;
 use std::fmt;
@@ -24,10 +25,7 @@ impl LayoutOptions<'_> {
         self.options.len() == 0
     }
 
-    pub fn from_json(
-        state: u32,
-        labels: &Value,
-    ) -> Result<LayoutOptions<'_>, Box<dyn std::error::Error>> {
+    pub fn from_json(state: u32, labels: &Value) -> Result<LayoutOptions<'_>> {
         let mut options = Vec::new();
         let mut start_bit: u8 = 0;
         if matches!(labels, Value::Null) {
@@ -35,7 +33,7 @@ impl LayoutOptions<'_> {
         }
         for label in labels
             .as_array()
-            .ok_or("layout/labels should be an array")?
+            .ok_or(anyhow!("layout/labels should be an array"))?
             .iter()
             .rev()
         {
@@ -50,13 +48,13 @@ impl LayoutOptions<'_> {
                         vars.push(
                             variant
                                 .as_str()
-                                .ok_or("array layout/labels should be array of strings")?,
+                                .ok_or(anyhow!("array layout/labels should be array of strings"))?,
                         )
                     }
                     options.push((
                         variants[0]
                             .as_str()
-                            .ok_or("layout/label name should be string")?,
+                            .ok_or(anyhow!("layout/label name should be string"))?,
                         vars,
                         start_bit,
                     ));
@@ -102,10 +100,7 @@ impl LayoutOptions<'_> {
         result
     }
 
-    pub fn set_via_options(
-        &mut self,
-        options: Vec<(u8, u8)>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn set_via_options(&mut self, options: Vec<(u8, u8)>) -> Result<()> {
         for (option_idx, (_, variants, start_bit)) in self.options.iter().enumerate() {
             for (new_option, new_variant) in &options {
                 if option_idx as u8 == *new_option {
@@ -147,7 +142,7 @@ impl fmt::Display for LayoutOptions<'_> {
     }
 }
 
-pub fn load_layout_options(device: &HidDevice) -> Result<u32, Box<dyn std::error::Error>> {
+pub fn load_layout_options(device: &HidDevice) -> Result<u32> {
     match send_recv(device, &[CMD_VIA_GET_KEYBOARD_VALUE, VIA_LAYOUT_OPTIONS]) {
         Ok(data) => {
             if data[0] != VIA_UNHANDLED {
@@ -164,10 +159,7 @@ pub fn load_layout_options(device: &HidDevice) -> Result<u32, Box<dyn std::error
     }
 }
 
-pub fn set_layout_options(
-    device: &HidDevice,
-    options: u32,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_layout_options(device: &HidDevice, options: u32) -> Result<()> {
     match send_recv(
         device,
         &[

@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow};
 use hidapi::{HidDevice, HidError, HidResult};
 use lzma::LzmaError;
 use serde_json::Value;
@@ -153,10 +154,7 @@ pub fn recv(device: &HidDevice) -> HidResult<[u8; MESSAGE_LENGTH]> {
     }
 }
 
-pub fn send_recv(
-    device: &HidDevice,
-    data_out: &[u8],
-) -> Result<[u8; MESSAGE_LENGTH], Box<dyn std::error::Error>> {
+pub fn send_recv(device: &HidDevice, data_out: &[u8]) -> Result<[u8; MESSAGE_LENGTH]> {
     let mut attempts = 5;
     loop {
         match send(device, data_out) {
@@ -200,7 +198,7 @@ pub struct Capabilities {
     pub layer_lock: bool,
 }
 
-pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std::error::Error>> {
+pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities> {
     let vial_version;
     let companion_hid_version;
     let layer_count;
@@ -325,7 +323,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
     }
 }
 
-pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::Error>> {
+pub fn load_vial_meta(device: &HidDevice) -> Result<Value> {
     let meta_size: u32;
     let mut block: u32;
     let mut remaining_size: i64;
@@ -400,23 +398,24 @@ impl Keymap {
         layers: u8,
         layers_data: &Vec<Value>,
         vial_version: u32,
-    ) -> Result<Keymap, Box<dyn std::error::Error>> {
+    ) -> Result<Keymap> {
         let mut keys = Vec::<u8>::new();
         for layer in layers_data {
             for row in layer
                 .as_array()
-                .ok_or("layer content should be array of rows")?
+                .ok_or(anyhow!("layer content should be array of rows"))?
             {
                 for value in row
                     .as_array()
-                    .ok_or("row content should be array of keycodes")?
+                    .ok_or(anyhow!("row content should be array of keycodes"))?
                 {
                     let keycode: u16 = match value {
                         Value::Number(_) => 0,
                         Value::String(value) => {
                             if value.starts_with("0x") {
-                                let (_, hex) =
-                                    value.split_once("x").ok_or("Incorrect hex encoding")?;
+                                let (_, hex) = value
+                                    .split_once("x")
+                                    .ok_or(anyhow!("Incorrect hex encoding"))?;
                                 u16::from_str_radix(hex, 16)?
                             } else {
                                 keycodes::name_to_qid(value, vial_version)?
@@ -442,7 +441,7 @@ impl Keymap {
         })
     }
 
-    pub fn to_json(&self, vial_version: u32) -> Result<Value, Box<dyn std::error::Error>> {
+    pub fn to_json(&self, vial_version: u32) -> Result<Value> {
         let mut result = Vec::new();
         for layer_num in 0..self.layers {
             let mut layer = Vec::new();
@@ -463,13 +462,7 @@ impl Keymap {
         Ok(Value::Array(result))
     }
 
-    pub fn get_short(
-        &self,
-        layer: u8,
-        row: u8,
-        col: u8,
-        vial_version: u32,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn get_short(&self, layer: u8, row: u8, col: u8, vial_version: u32) -> Result<String> {
         if layer >= self.layers {
             Err(KeymapError("non existing layer requested".to_string()).into())
         } else if row >= self.rows {
@@ -487,13 +480,7 @@ impl Keymap {
         }
     }
 
-    pub fn get_long(
-        &self,
-        layer: u8,
-        row: u8,
-        col: u8,
-        vial_version: u32,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn get_long(&self, layer: u8, row: u8, col: u8, vial_version: u32) -> Result<String> {
         if layer >= self.layers {
             Err(KeymapError("non existing layer requested".to_string()).into())
         } else if row >= self.rows {
@@ -521,12 +508,7 @@ impl Keymap {
     }
 }
 
-pub fn load_layers_keys(
-    device: &HidDevice,
-    layers: u8,
-    rows: u8,
-    cols: u8,
-) -> Result<Keymap, Box<dyn std::error::Error>> {
+pub fn load_layers_keys(device: &HidDevice, layers: u8, rows: u8, cols: u8) -> Result<Keymap> {
     let size: u16 = layers as u16 * rows as u16 * cols as u16 * 2;
     let mut keys = Vec::new();
     let mut offset: u16 = 0;
@@ -559,13 +541,7 @@ pub fn load_layers_keys(
     })
 }
 
-pub fn set_keycode(
-    device: &HidDevice,
-    layer: u8,
-    row: u8,
-    col: u8,
-    keycode: u16,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_keycode(device: &HidDevice, layer: u8, row: u8, col: u8, keycode: u16) -> Result<()> {
     let kk1 = ((keycode >> 8) & 0xFF) as u8;
     let kk2 = (keycode & 0xFF) as u8;
     match send(device, &[CMD_VIA_SET_KEYCODE, layer, row, col, kk1, kk2]) {
@@ -574,7 +550,7 @@ pub fn set_keycode(
     }
 }
 
-pub fn set_keymap(device: &HidDevice, keymap: &Keymap) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_keymap(device: &HidDevice, keymap: &Keymap) -> Result<()> {
     for layer_num in 0..keymap.layers {
         for row_num in 0..keymap.rows {
             for col_num in 0..keymap.cols {
@@ -593,7 +569,7 @@ pub struct LockedStatus {
     pub unlock_buttons: Vec<(u8, u8)>,
 }
 
-pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus, Box<dyn std::error::Error>> {
+pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus> {
     match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_UNLOCK_STATUS]) {
         Ok(data) => {
             // println!("{:?}", data);
@@ -617,7 +593,7 @@ pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus, Box<dyn std
     }
 }
 
-pub fn start_unlock(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+pub fn start_unlock(device: &HidDevice) -> Result<()> {
     match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_START]) {
         Ok(_) => {
             //println!("start_unlock {:?}", data);
@@ -627,7 +603,7 @@ pub fn start_unlock(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>
     }
 }
 
-pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error::Error>> {
+pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8)> {
     match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_POLL]) {
         Ok(data) => {
             //println!("unlock poll{:?}", data);
@@ -639,14 +615,14 @@ pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error:
     }
 }
 
-pub fn set_locked(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_locked(device: &HidDevice) -> Result<()> {
     match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_LOCK]) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
 }
 
-pub fn load_uid(device: &HidDevice) -> Result<u64, Box<dyn std::error::Error>> {
+pub fn load_uid(device: &HidDevice) -> Result<u64> {
     match send_recv(device, &[CMD_VIA_VIAL_PREFIX]) {
         Ok(data) => {
             let mut uid_bytes: [u8; 8] = [0; 8];

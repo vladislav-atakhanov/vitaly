@@ -1,5 +1,6 @@
 use crate::keycodes;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 
 pub fn run(
@@ -8,14 +9,14 @@ pub fn run(
     layer: u8,
     position: &str,
     value: &Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
     let clean_position = position.replace(" ", "");
     let (index, direction) = clean_position
         .split_once(",")
-        .ok_or("positons should be in format index,direction")?;
+        .ok_or(anyhow!("positons should be in format index,direction"))?;
     let (index, direction): (u8, u8) = (index.parse()?, direction.parse()?);
 
     match value {

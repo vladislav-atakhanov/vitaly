@@ -1,6 +1,7 @@
 use crate::common;
 use crate::keymap;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -11,7 +12,7 @@ pub fn run(
     device: &DeviceInfo,
     meta_file: &Option<String>,
     file: &String,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
 
@@ -20,10 +21,10 @@ pub fn run(
     let meta = common::load_meta(&dev, &capabilities, meta_file)?;
     let cols = meta["matrix"]["cols"]
         .as_u64()
-        .ok_or("matrix/cols not found in meta")? as u8;
+        .ok_or(anyhow!("matrix/cols not found in meta"))? as u8;
     let rows = meta["matrix"]["rows"]
         .as_u64()
-        .ok_or("matrix/rows not found in meta")? as u8;
+        .ok_or(anyhow!("matrix/rows not found in meta"))? as u8;
 
     let encoders_count = keymap::get_encoders_count(&meta["layouts"]["keymap"])?;
     let mut encoders = Vec::new();
@@ -79,81 +80,105 @@ pub fn run(
         "layout_options": layout_options,
     });
 
-    result.as_object_mut().ok_or("broken root")?.insert(
-        "encoder_layout".to_string(),
-        Value::Array(protocol::encoders_to_json(
-            &encoders,
-            capabilities.vial_version,
-        )?),
-    );
+    result
+        .as_object_mut()
+        .ok_or(anyhow!("broken root"))?
+        .insert(
+            "encoder_layout".to_string(),
+            Value::Array(protocol::encoders_to_json(
+                &encoders,
+                capabilities.vial_version,
+            )?),
+        );
 
     if capabilities.vial_version > 0 {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "vial_protocol".to_string(),
-            capabilities.vial_version.into(),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "vial_protocol".to_string(),
+                capabilities.vial_version.into(),
+            );
     }
 
     if !alt_repeats.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "alt_repeat_key".to_string(),
-            Value::Array(protocol::alt_repeats_to_json(
-                &alt_repeats,
-                capabilities.vial_version,
-            )?),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "alt_repeat_key".to_string(),
+                Value::Array(protocol::alt_repeats_to_json(
+                    &alt_repeats,
+                    capabilities.vial_version,
+                )?),
+            );
     }
 
     if !key_overrides.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "key_override".to_string(),
-            Value::Array(protocol::key_overrides_to_json(
-                &key_overrides,
-                capabilities.vial_version,
-            )?),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "key_override".to_string(),
+                Value::Array(protocol::key_overrides_to_json(
+                    &key_overrides,
+                    capabilities.vial_version,
+                )?),
+            );
     }
 
     if !combos.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "combo".to_string(),
-            Value::Array(protocol::combos_to_json(
-                &combos,
-                capabilities.vial_version,
-            )?),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "combo".to_string(),
+                Value::Array(protocol::combos_to_json(
+                    &combos,
+                    capabilities.vial_version,
+                )?),
+            );
     }
 
     if !tap_dances.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "tap_dance".to_string(),
-            Value::Array(protocol::tap_dances_to_json(
-                &tap_dances,
-                capabilities.vial_version,
-            )?),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "tap_dance".to_string(),
+                Value::Array(protocol::tap_dances_to_json(
+                    &tap_dances,
+                    capabilities.vial_version,
+                )?),
+            );
     }
 
     if !macros.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "macro".to_string(),
-            Value::Array(protocol::macros_to_json(
-                &macros,
-                capabilities.vial_version,
-            )?),
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "macro".to_string(),
+                Value::Array(protocol::macros_to_json(
+                    &macros,
+                    capabilities.vial_version,
+                )?),
+            );
     } else {
         result
             .as_object_mut()
-            .ok_or("broken root")?
+            .ok_or(anyhow!("broken root"))?
             .insert("macro".to_string(), Value::Array([].to_vec()));
     }
 
     if !qmk_settings.is_empty() {
-        result.as_object_mut().ok_or("broken root")?.insert(
-            "settings".to_string(),
-            protocol::qmk_settings_to_json(&qmk_settings)?,
-        );
+        result
+            .as_object_mut()
+            .ok_or(anyhow!("broken root"))?
+            .insert(
+                "settings".to_string(),
+                protocol::qmk_settings_to_json(&qmk_settings)?,
+            );
     }
 
     fs::write(file, result.to_string())?;

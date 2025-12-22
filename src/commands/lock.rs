@@ -1,16 +1,12 @@
 use crate::common;
 use crate::keymap;
 use crate::protocol;
+use anyhow::Result;
 use hidapi::{DeviceInfo, HidApi};
 use std::collections::HashMap;
 use std::{thread, time};
 
-pub fn run(
-    api: &HidApi,
-    device: &DeviceInfo,
-    unlock: bool,
-    lock: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(api: &HidApi, device: &DeviceInfo, unlock: bool, lock: bool) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;

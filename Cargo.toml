@@ -1,6 +1,6 @@
 [package]
 name = "vitaly"
-version = "0.1.14"
+version = "0.1.15"
 edition = "2024"
 description = "VIA/Vial API client and cli tool for guiless keyboard configuration."
 license = "MIT"
@@ -12,6 +12,7 @@ keywords = ["qmk", "via", "vial", "cli"]
 categories = ["command-line-utilities", "command-line-interface"]
 
 [dependencies]
+anyhow = "1.0.100"
 argh = "0.1.13"
 hidapi = "2.6.3"
 palette = "0.7.6"

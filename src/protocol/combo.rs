@@ -3,6 +3,7 @@ use crate::protocol::{
     CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_COMBO_GET, DYNAMIC_VIAL_COMBO_SET,
     ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 use thiserror::Error;
@@ -22,14 +23,10 @@ pub struct Combo {
 }
 
 impl Combo {
-    pub fn from_string(
-        index: u8,
-        value: &str,
-        vial_version: u32,
-    ) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<Combo> {
         let (keys_all, output) = value
             .split_once("=")
-            .ok_or("resulting action should be declared after =")?;
+            .ok_or(anyhow!("resulting action should be declared after ="))?;
         let keys: Vec<_> = keys_all.split("+").collect();
         let mut ks: [u16; 4] = [0x0; 4];
         let out = keycodes::name_to_qid(output, vial_version)?;
@@ -61,17 +58,15 @@ impl Combo {
         self.output == 0 || self.key1 == 0
     }
 
-    pub fn from_json(
-        index: u8,
-        combo_json: &Value,
-        vial_version: u32,
-    ) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_json(index: u8, combo_json: &Value, vial_version: u32) -> Result<Combo> {
         let mut ks: [u16; 5] = [0x0; 5];
         let values = combo_json
             .as_array()
-            .ok_or("Combo should be encoded into array")?;
+            .ok_or(anyhow!("Combo should be encoded into array"))?;
         for (pos, val) in values.iter().enumerate() {
-            let value_string = val.as_str().ok_or("Combo elements should be strings")?;
+            let value_string = val
+                .as_str()
+                .ok_or(anyhow!("Combo elements should be strings"))?;
             let qid = keycodes::name_to_qid(value_string, vial_version)?;
             match pos {
                 0..=4 => ks[pos] = qid,
@@ -116,10 +111,7 @@ impl Combo {
     }
 }
 
-pub fn load_combos(
-    device: &HidDevice,
-    count: u8,
-) -> Result<Vec<Combo>, Box<dyn std::error::Error>> {
+pub fn load_combos(device: &HidDevice, count: u8) -> Result<Vec<Combo>> {
     let mut combos: Vec<Combo> = vec![];
     for idx in 0..count {
         match send_recv(
@@ -152,21 +144,18 @@ pub fn load_combos(
     Ok(combos)
 }
 
-pub fn load_combos_from_json(
-    combos_json: &Value,
-    vial_version: u32,
-) -> Result<Vec<Combo>, Box<dyn std::error::Error>> {
+pub fn load_combos_from_json(combos_json: &Value, vial_version: u32) -> Result<Vec<Combo>> {
     let mut result = Vec::new();
     let combos = combos_json
         .as_array()
-        .ok_or("Combos should be encoded as array of arrays")?;
+        .ok_or(anyhow!("Combos should be encoded as array of arrays"))?;
     for (i, combo) in combos.iter().enumerate() {
         result.push(Combo::from_json(i as u8, combo, vial_version)?)
     }
     Ok(result)
 }
 
-pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<()> {
     match send(
         device,
         &[
@@ -191,10 +180,7 @@ pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<(), Box<dyn std::e
     }
 }
 
-pub fn combos_to_json(
-    combos: &Vec<Combo>,
-    vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn combos_to_json(combos: &Vec<Combo>, vial_version: u32) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for combo in combos {
         result.push(json!([

@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow};
 use palette::rgb::Rgb;
 use palette::{FromColor, Hsv, Srgb};
 use std::cmp::min;
@@ -10,10 +11,7 @@ use crate::protocol::{
 };
 use hidapi::HidDevice;
 
-pub fn rgb_to_hsv(
-    color: &str,
-    max_brightness: u8,
-) -> Result<(u8, u8, u8), Box<dyn std::error::Error>> {
+pub fn rgb_to_hsv(color: &str, max_brightness: u8) -> Result<(u8, u8, u8)> {
     let rgb: Srgb<u8> = color.parse()?;
     let ru8: Srgb = Srgb::from(rgb);
     let hsv: Hsv = Hsv::from_color(ru8);
@@ -47,7 +45,7 @@ pub struct RGBInfo {
 }
 
 impl RGBInfo {
-    pub fn effect_name(id: u16) -> Result<&'static str, Box<dyn std::error::Error>> {
+    pub fn effect_name(id: u16) -> Result<&'static str> {
         match id {
             0 => Ok("Disable"),
             1 => Ok("Direct Control"),
@@ -94,7 +92,7 @@ impl RGBInfo {
             42 => Ok("Solid Multisplash"),
             43 => Ok("Pixel Rain"),
             44 => Ok("Pixel Fractal"),
-            _ => Err("no such effect".into()),
+            _ => Err(anyhow!("no such effect")),
         }
     }
 
@@ -107,7 +105,7 @@ impl RGBInfo {
         }
     }
 
-    pub fn set_color(&mut self, color: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn set_color(&mut self, color: &str) -> Result<()> {
         let (h, s, v) = rgb_to_hsv(color, self.max_brightness)?;
         self.color_h = h;
         self.color_s = s;
@@ -145,7 +143,7 @@ impl fmt::Display for RGBInfo {
     }
 }
 
-pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::Error>> {
+pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo> {
     let version: u16;
     let max_brightness: u8;
     let mut effect: u16 = 0;
@@ -227,10 +225,7 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
     })
 }
 
-pub fn set_rgb_mode(
-    device: &HidDevice,
-    rgb_info: &RGBInfo,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_rgb_mode(device: &HidDevice, rgb_info: &RGBInfo) -> Result<()> {
     let e1 = (rgb_info.effect & 0xFF) as u8;
     let e2 = ((rgb_info.effect >> 8) & 0xFF) as u8;
     match send_recv(
@@ -253,7 +248,7 @@ pub fn set_rgb_mode(
     Ok(())
 }
 
-pub fn persist_rgb(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+pub fn persist_rgb(device: &HidDevice) -> Result<()> {
     match send_recv(device, &[CMD_VIA_LIGHTING_SAVE]) {
         Ok(_) => {}
         Err(e) => return Err(e),
@@ -270,7 +265,7 @@ fn set_leds_range(
     to: u16,
     color: &str,
     max_brightness: u8,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     if to - from > LEDS_PER_REQ {
         let mut current_from = from;
         while current_from < to {
@@ -309,11 +304,7 @@ fn set_leds_range(
     Ok(())
 }
 
-pub fn set_leds_direct(
-    device: &HidDevice,
-    command: &str,
-    max_brightness: u8,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_leds_direct(device: &HidDevice, command: &str, max_brightness: u8) -> Result<()> {
     let instructions = command.replace(" ", "");
     for instruction in instructions.split(";") {
         if let Some((leds, color)) = instruction.split_once("=") {
@@ -332,7 +323,7 @@ pub fn set_leds_direct(
                 }
             }
         } else {
-            return Err("Bad instruction".into());
+            return Err(anyhow!("Bad instruction"));
         }
     }
     Ok(())

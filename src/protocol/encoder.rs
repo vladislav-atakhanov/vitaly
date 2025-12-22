@@ -2,6 +2,7 @@ use crate::keycodes;
 use crate::protocol::{
     CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_ENCODER, CMD_VIAL_SET_ENCODER, ProtocolError, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 
@@ -12,11 +13,7 @@ pub struct Encoder {
     pub cw: u16,
 }
 
-pub fn load_encoder(
-    device: &HidDevice,
-    layer: u8,
-    index: u8,
-) -> Result<Encoder, Box<dyn std::error::Error>> {
+pub fn load_encoder(device: &HidDevice, layer: u8, index: u8) -> Result<Encoder> {
     match send_recv(
         device,
         &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_ENCODER, layer, index],
@@ -36,7 +33,7 @@ pub fn set_encoder(
     index: u8,
     direction: u8,
     value: u16,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     match send_recv(
         device,
         &[
@@ -57,25 +54,27 @@ pub fn set_encoder(
 pub fn load_encoders_from_json(
     encoders_json: &Value,
     vial_version: u32,
-) -> Result<Vec<Vec<Encoder>>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Vec<Encoder>>> {
     let mut result = Vec::new();
     if matches!(encoders_json, Value::Null) {
         return Ok(result);
     }
-    let layers = encoders_json
-        .as_array()
-        .ok_or("encoders should be encoded as array of arrays of arrays")?;
+    let layers = encoders_json.as_array().ok_or(anyhow!(
+        "encoders should be encoded as array of arrays of arrays"
+    ))?;
     for layer in layers {
         let mut layer_encoders = Vec::new();
         for (idx, encoder) in layer
             .as_array()
-            .ok_or("encoders should be encoded as array of arrays of arrays")?
+            .ok_or(anyhow!(
+                "encoders should be encoded as array of arrays of arrays"
+            ))?
             .iter()
             .enumerate()
         {
-            let values = encoder
-                .as_array()
-                .ok_or("encoder values should be and array with two elements")?;
+            let values = encoder.as_array().ok_or(anyhow!(
+                "encoder values should be and array with two elements"
+            ))?;
             if values.len() != 2 {
                 return Err(ProtocolError::General(
                     "encoder values should be and array with two elements".to_string(),
@@ -84,11 +83,11 @@ pub fn load_encoders_from_json(
             }
             let ccw = values[0]
                 .as_str()
-                .ok_or("encoder value should be a string")?;
+                .ok_or(anyhow!("encoder value should be a string"))?;
             let ccw = keycodes::name_to_qid(ccw, vial_version)?;
             let cw = values[1]
                 .as_str()
-                .ok_or("encoder value should be a string")?;
+                .ok_or(anyhow!("encoder value should be a string"))?;
             let cw = keycodes::name_to_qid(cw, vial_version)?;
             layer_encoders.push(Encoder {
                 index: idx as u8,
@@ -104,7 +103,7 @@ pub fn load_encoders_from_json(
 pub fn encoders_to_json(
     layers_encoders: &Vec<Vec<Encoder>>,
     vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for layer_encoder in layers_encoders {
         let mut layer = Vec::new();

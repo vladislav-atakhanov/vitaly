@@ -1,6 +1,7 @@
 use crate::common;
 use crate::keymap;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 
 pub fn run(
@@ -10,7 +11,7 @@ pub fn run(
     positions: bool,
     number: Option<u8>,
     layout_options: &Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
@@ -42,10 +43,10 @@ pub fn run(
         let layer_number: u8 = number.unwrap_or_default();
         let cols = meta["matrix"]["cols"]
             .as_u64()
-            .ok_or("matrix/cols not found in meta")? as u8;
+            .ok_or(anyhow!("matrix/cols not found in meta"))? as u8;
         let rows = meta["matrix"]["rows"]
             .as_u64()
-            .ok_or("matrix/rows not found in meta")? as u8;
+            .ok_or(anyhow!("matrix/rows not found in meta"))? as u8;
         let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
         let mut encoders = Vec::new();
         for button in &buttons {

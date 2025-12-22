@@ -3,6 +3,7 @@ use crate::protocol::{
     BUFFER_FETCH_CHUNK, CMD_VIA_MACRO_GET_BUFFER, CMD_VIA_MACRO_SET_BUFFER, Capabilities,
     MESSAGE_LENGTH, ProtocolError, VIA_UNHANDLED, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 use std::cmp::min;
@@ -81,8 +82,8 @@ impl MacroStep {
         result
     }
 
-    fn from_string(step: &str, vial_version: u32) -> Result<MacroStep, Box<dyn std::error::Error>> {
-        let (left, right) = step.split_once("(").ok_or("Lack of parenthesis")?;
+    fn from_string(step: &str, vial_version: u32) -> Result<MacroStep> {
+        let (left, right) = step.split_once("(").ok_or(anyhow!("Lack of parenthesis"))?;
         let right = right[0..(right.len() - 1)].to_string();
         match left {
             "Delay" => Ok(MacroStep::Delay(right.parse()?)),
@@ -97,13 +98,10 @@ impl MacroStep {
         }
     }
 
-    fn from_json(
-        step_json: &Value,
-        vial_version: u32,
-    ) -> Result<Vec<MacroStep>, Box<dyn std::error::Error>> {
+    fn from_json(step_json: &Value, vial_version: u32) -> Result<Vec<MacroStep>> {
         let step = step_json
             .as_array()
-            .ok_or("macro step should be an array")?;
+            .ok_or(anyhow!("macro step should be an array"))?;
         if step.len() < 2 {
             return Err(MacroParsingError(
                 "macro step array should be at least 2 elements long".to_string(),
@@ -112,25 +110,31 @@ impl MacroStep {
         }
         let mut result = Vec::new();
         let action = &step[0];
-        match action.as_str().ok_or("action should be string")? {
+        match action.as_str().ok_or(anyhow!("action should be string"))? {
             "delay" => {
                 for arg in &step[1..] {
                     result.push(MacroStep::Delay(
-                        arg.as_u64().ok_or("delay argument should be number")? as u16,
+                        arg.as_u64()
+                            .ok_or(anyhow!("delay argument should be number"))?
+                            as u16,
                     ));
                 }
                 Ok(result)
             }
             "text" => {
                 for arg in &step[1..] {
-                    let text_arg = arg.as_str().ok_or("text argument should be string");
+                    let text_arg = arg
+                        .as_str()
+                        .ok_or(anyhow!("text argument should be string"));
                     result.push(MacroStep::Text(text_arg?.to_string()));
                 }
                 Ok(result)
             }
             "tap" => {
                 for arg in &step[1..] {
-                    let text_arg = arg.as_str().ok_or("text argument should be string")?;
+                    let text_arg = arg
+                        .as_str()
+                        .ok_or(anyhow!("text argument should be string"))?;
                     result.push(MacroStep::Tap(keycodes::name_to_qid(
                         text_arg,
                         vial_version,
@@ -140,7 +144,9 @@ impl MacroStep {
             }
             "down" => {
                 for arg in &step[1..] {
-                    let text_arg = arg.as_str().ok_or("text argument should be string")?;
+                    let text_arg = arg
+                        .as_str()
+                        .ok_or(anyhow!("text argument should be string"))?;
                     result.push(MacroStep::Down(keycodes::name_to_qid(
                         text_arg,
                         vial_version,
@@ -150,7 +156,9 @@ impl MacroStep {
             }
             "up" => {
                 for arg in &step[1..] {
-                    let text_arg = arg.as_str().ok_or("text argument should be string")?;
+                    let text_arg = arg
+                        .as_str()
+                        .ok_or(anyhow!("text argument should be string"))?;
                     result.push(MacroStep::Up(keycodes::name_to_qid(
                         text_arg,
                         vial_version,
@@ -195,11 +203,7 @@ impl Macro {
         self.steps.len() == 0
     }
 
-    pub fn from_string(
-        index: u8,
-        value: &str,
-        vial_version: u32,
-    ) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<Macro> {
         let steps: Vec<&str> = value.split(";").map(|s| s.trim()).collect();
         let mut parsed_steps = Vec::new();
         for step in steps {
@@ -213,15 +217,11 @@ impl Macro {
         })
     }
 
-    pub fn from_json(
-        index: u8,
-        steps_json: &Value,
-        vial_version: u32,
-    ) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_json(index: u8, steps_json: &Value, vial_version: u32) -> Result<Macro> {
         let mut parsed_steps = Vec::new();
         let steps = steps_json
             .as_array()
-            .ok_or("macro should be defined as array of macro steps")?;
+            .ok_or(anyhow!("macro should be defined as array of macro steps"))?;
         for step in steps {
             parsed_steps.append(&mut MacroStep::from_json(step, vial_version)?);
         }
@@ -247,13 +247,10 @@ impl Macro {
     }
 }
 
-pub fn load_macros_from_json(
-    macros_json: &Value,
-    vial_version: u32,
-) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
+pub fn load_macros_from_json(macros_json: &Value, vial_version: u32) -> Result<Vec<Macro>> {
     let macros = macros_json
         .as_array()
-        .ok_or("macro value should be an array")?;
+        .ok_or(anyhow!("macro value should be an array"))?;
     let mut result = Vec::new();
     for (i, m) in macros.iter().enumerate() {
         result.push(Macro::from_json(i as u8, m, vial_version)?);
@@ -270,7 +267,7 @@ enum MacroParsingState {
     CommandWithArgs(u8, u8),
 }
 
-fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::error::Error>> {
+fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro> {
     let mut steps = Vec::new();
     let mut s: MacroParsingState = MacroParsingState::Start;
     for i in 0..data.len() {
@@ -351,14 +348,16 @@ fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::erro
     Ok(Macro { index, steps })
 }
 
-pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
+pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>> {
     let mut start = 0;
     let mut pos = 0;
     let mut macroses = Vec::new();
     if !(data.is_empty() || data.len() == 1 && data[0] == 0) {
         for i in 0..data.len() {
             if data[i] == 0 {
-                let macro_bytes = data.get(start..i).ok_or("fatal deserialization error")?;
+                let macro_bytes = data
+                    .get(start..i)
+                    .ok_or(anyhow!("fatal deserialization error"))?;
                 let m = deserialize_single(pos, macro_bytes)?;
                 macroses.push(m);
                 pos += 1;
@@ -378,11 +377,7 @@ pub fn serialize(macros: &Vec<Macro>) -> Vec<u8> {
     result
 }
 
-pub fn load_macros(
-    device: &HidDevice,
-    count: u8,
-    buffer_size: u16,
-) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
+pub fn load_macros(device: &HidDevice, count: u8, buffer_size: u16) -> Result<Vec<Macro>> {
     let mut macro_buffer = Vec::new();
     let mut macro_loaded = 0;
     let mut last_zero = false;
@@ -438,7 +433,7 @@ pub fn set_macros(
     device: &HidDevice,
     capabilities: &Capabilities,
     macros: &Vec<Macro>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     if macros.len() > capabilities.macro_count.into() {
         return Err(MacroSavingError(
             format!(
@@ -500,10 +495,7 @@ pub fn set_macros(
     Ok(())
 }
 
-pub fn macros_to_json(
-    macros: &Vec<Macro>,
-    vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn macros_to_json(macros: &Vec<Macro>, vial_version: u32) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for m in macros {
         let mut step_json = Vec::new();
@@ -548,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_string() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_from_string() -> Result<()> {
         let m = Macro::from_string(12, &"Text(example); Tap(KC_1)".to_string(), 6)?;
         assert_eq!(12, m.index);
         assert_eq!(2, m.steps.len());
@@ -649,7 +641,7 @@ mod tests {
     }
 
     #[test]
-    fn test_json_round_trip() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_json_round_trip() -> Result<()> {
         let original_macro =
             Macro::from_string(0, &"Tap(KC_A); Delay(100); Text(test)".to_string(), 6)?;
         let macros_vec = vec![original_macro];

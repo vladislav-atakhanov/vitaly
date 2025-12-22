@@ -2,6 +2,7 @@ use crate::keycodes::{
     KeyParsingError, MOD_LALT, MOD_LCTL, MOD_LGUI, MOD_LSFT, MOD_RALT, MOD_RCTL, MOD_RGUI,
     MOD_RSFT, mod_to_name, name_to_mod, parse_layer, parse_num,
 };
+use anyhow::{Result, anyhow};
 
 pub mod code_to_name;
 pub mod name_to_code;
@@ -14,10 +15,11 @@ pub fn is_custom(keycode: u16) -> Option<u8> {
     }
 }
 
-pub fn name_to_qid(name: &str) -> Result<u16, Box<dyn std::error::Error>> {
+pub fn name_to_qid(name: &str) -> Result<u16> {
     let n = name.replace(" ", "");
     if n.starts_with("0x") {
-        let keycode = u16::from_str_radix(n.strip_prefix("0x").ok_or("bad hex prefix")?, 16)?;
+        let keycode =
+            u16::from_str_radix(n.strip_prefix("0x").ok_or(anyhow!("bad hex prefix"))?, 16)?;
         return Ok(keycode);
     }
     if let Some((left, right_str)) = n.split_once('(') {

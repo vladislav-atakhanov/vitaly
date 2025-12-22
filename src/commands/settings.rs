@@ -1,5 +1,6 @@
 use crate::common;
 use crate::protocol;
+use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -10,7 +11,7 @@ pub fn run(
     qsid: &Option<f64>,
     value: &Option<String>,
     reset: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
@@ -44,25 +45,38 @@ pub fn run(
             }
             for group in settings["tabs"]
                 .as_array()
-                .ok_or("tabs should be an array")?
+                .ok_or(anyhow!("tabs should be an array"))?
             {
                 //let group_name = group["name"].as_str().unwrap();
                 for field in group["fields"]
                     .as_array()
-                    .ok_or("fields should be an array")?
+                    .ok_or(anyhow!("fields should be an array"))?
                 {
-                    let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
-                    let title = field["title"].as_str().ok_or("title should be a string")?;
+                    let qsid = field["qsid"]
+                        .as_u64()
+                        .ok_or(anyhow!("qsid should be a number"))?
+                        as u16;
+                    let title = field["title"]
+                        .as_str()
+                        .ok_or(anyhow!("title should be a string"))?;
                     let width: u8 = match &field["width"] {
-                        Value::Number(n) => n.as_u64().ok_or("width shoulbe a number")? as u8,
+                        Value::Number(n) => {
+                            n.as_u64().ok_or(anyhow!("width shoulbe a number"))? as u8
+                        }
                         _ => 1,
                     };
-                    let bool_field =
-                        field["type"].as_str().ok_or("type should be string")? == "boolean";
+                    let bool_field = field["type"]
+                        .as_str()
+                        .ok_or(anyhow!("type should be string"))?
+                        == "boolean";
                     let with_bits = !matches!(field["bit"], Value::Null);
                     if qsid == tsid
                         && (!with_bits
-                            || (field["bit"].as_u64().ok_or("bit should be number")? as u8) == tbit)
+                            || (field["bit"]
+                                .as_u64()
+                                .ok_or(anyhow!("bit should be number"))?
+                                as u8)
+                                == tbit)
                     {
                         match value {
                             None => {
@@ -116,20 +130,29 @@ pub fn run(
 
             for group in settings["tabs"]
                 .as_array()
-                .ok_or("tabs should be an array")?
+                .ok_or(anyhow!("tabs should be an array"))?
             {
-                let group_name = group["name"].as_str().ok_or("name should be a string")?;
+                let group_name = group["name"]
+                    .as_str()
+                    .ok_or(anyhow!("name should be a string"))?;
                 println!("\n{}:", group_name);
                 for field in group["fields"]
                     .as_array()
-                    .ok_or("fields should be an array")?
+                    .ok_or(anyhow!("fields should be an array"))?
                 {
                     let width: u8 = match &field["width"] {
-                        Value::Number(n) => n.as_u64().ok_or("width should be a number")? as u8,
+                        Value::Number(n) => {
+                            n.as_u64().ok_or(anyhow!("width should be a number"))? as u8
+                        }
                         _ => 1,
                     };
-                    let title = field["title"].as_str().ok_or("title should be a string")?;
-                    let qsid = field["qsid"].as_u64().ok_or("title should be a number")? as u16;
+                    let title = field["title"]
+                        .as_str()
+                        .ok_or(anyhow!("title should be a string"))?;
+                    let qsid = field["qsid"]
+                        .as_u64()
+                        .ok_or(anyhow!("title should be a number"))?
+                        as u16;
                     if qsids.contains(&qsid) {
                         let value;
                         if let std::collections::hash_map::Entry::Vacant(e) =
@@ -138,12 +161,16 @@ pub fn run(
                             value = protocol::get_qmk_value(&dev, qsid, width)?;
                             e.insert(value);
                         } else {
-                            value = *values_cache.get(&qsid).ok_or("cache broken")?;
+                            value = *values_cache.get(&qsid).ok_or(anyhow!("cache broken"))?;
                         }
-                        match field["type"].as_str().ok_or("type should be a string")? {
+                        match field["type"]
+                            .as_str()
+                            .ok_or(anyhow!("type should be a string"))?
+                        {
                             "boolean" => match field["bit"].as_number() {
                                 Some(n) => {
-                                    let pos = n.as_u64().ok_or("bit should be a number")? as u8;
+                                    let pos =
+                                        n.as_u64().ok_or(anyhow!("bit should be a number"))? as u8;
                                     println!(
                                         "\t{}.{}) {} = {}",
                                         qsid,

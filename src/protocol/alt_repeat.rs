@@ -3,6 +3,7 @@ use crate::protocol::{
     CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_ALT_REPEAT_KEY_GET,
     DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
+use anyhow::{Result, anyhow};
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 
@@ -36,11 +37,7 @@ impl AltRepeat {
         options
     }
 
-    pub fn from_string(
-        index: u8,
-        value: &str,
-        vial_version: u32,
-    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<AltRepeat> {
         let cleaned = value.replace(" ", "");
         let keys: Vec<_> = cleaned.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -54,7 +51,9 @@ impl AltRepeat {
 
         if !keys.is_empty() {
             for part in keys {
-                let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
+                let (left, right) = part
+                    .split_once("=")
+                    .ok_or(anyhow!("each part should contain ="))?;
                 match left {
                     "keycode" | "k" => keycode = keycodes::name_to_qid(right, vial_version)?,
                     "alt_keycode" | "a" => {
@@ -108,11 +107,7 @@ impl AltRepeat {
         })
     }
 
-    pub fn from_json(
-        index: u8,
-        alt_repeat_json: &Value,
-        vial_version: u32,
-    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_json(index: u8, alt_repeat_json: &Value, vial_version: u32) -> Result<AltRepeat> {
         let mut keycode = 0u16;
         let mut alt_keycode = 0u16;
         let mut allowed_mods = 0u8;
@@ -122,30 +117,37 @@ impl AltRepeat {
         let mut arep_enabled = false;
         let alt_repeat = alt_repeat_json
             .as_object()
-            .ok_or("alt_repeat element should be an object")?;
+            .ok_or(anyhow!("alt_repeat element should be an object"))?;
 
         for (key, value) in alt_repeat {
             match key.as_str() {
                 "keycode" => {
                     keycode = keycodes::name_to_qid(
-                        value.as_str().ok_or("keycode value should be string")?,
+                        value
+                            .as_str()
+                            .ok_or(anyhow!("keycode value should be string"))?,
                         vial_version,
                     )?;
                 }
                 "alt_keycode" => {
                     alt_keycode = keycodes::name_to_qid(
-                        value.as_str().ok_or("keycode value should be string")?,
+                        value
+                            .as_str()
+                            .ok_or(anyhow!("keycode value should be string"))?,
                         vial_version,
                     )?;
                 }
                 "allowed_mods" => {
                     allowed_mods = value
                         .as_u64()
-                        .ok_or("allowed_mods value should be a number")?
+                        .ok_or(anyhow!("allowed_mods value should be a number"))?
                         as u8;
                 }
                 "options" => {
-                    let options = value.as_u64().ok_or("options value should be a number")? as u16;
+                    let options = value
+                        .as_u64()
+                        .ok_or(anyhow!("options value should be a number"))?
+                        as u16;
                     arep_option_default_to_this_alt_key = options & (1 << 0) == (1 << 0);
                     arep_option_bidirectional = options & (1 << 1) == (1 << 1);
                     arep_option_ignore_mod_handedness = options & (1 << 2) == (1 << 2);
@@ -224,10 +226,7 @@ impl AltRepeat {
     }
 }
 
-pub fn load_alt_repeats(
-    device: &HidDevice,
-    count: u8,
-) -> Result<Vec<AltRepeat>, Box<dyn std::error::Error>> {
+pub fn load_alt_repeats(device: &HidDevice, count: u8) -> Result<Vec<AltRepeat>> {
     let mut altrepeats: Vec<AltRepeat> = vec![];
     for idx in 0..count {
         match send_recv(
@@ -265,10 +264,10 @@ pub fn load_alt_repeats(
 pub fn load_alt_repeats_from_json(
     alt_repeats_json: &Value,
     vial_version: u32,
-) -> Result<Vec<AltRepeat>, Box<dyn std::error::Error>> {
+) -> Result<Vec<AltRepeat>> {
     let alt_repeats = alt_repeats_json
         .as_array()
-        .ok_or("alt_repeats_json should be an array")?;
+        .ok_or(anyhow!("alt_repeats_json should be an array"))?;
     let mut result = Vec::new();
     for (i, alt_repeat) in alt_repeats.iter().enumerate() {
         result.push(AltRepeat::from_json(i as u8, alt_repeat, vial_version)?);
@@ -276,10 +275,7 @@ pub fn load_alt_repeats_from_json(
     Ok(result)
 }
 
-pub fn set_alt_repeat(
-    device: &HidDevice,
-    altrepeat: &AltRepeat,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn set_alt_repeat(device: &HidDevice, altrepeat: &AltRepeat) -> Result<()> {
     match send(
         device,
         &[
@@ -300,10 +296,7 @@ pub fn set_alt_repeat(
     }
 }
 
-pub fn alt_repeats_to_json(
-    alt_repeats: &Vec<AltRepeat>,
-    vial_version: u32,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn alt_repeats_to_json(alt_repeats: &Vec<AltRepeat>, vial_version: u32) -> Result<Vec<Value>> {
     let mut result = Vec::new();
     for alt_repeat in alt_repeats {
         result.push(json!({

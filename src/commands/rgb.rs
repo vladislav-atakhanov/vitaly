@@ -1,4 +1,5 @@
 use crate::protocol;
+use anyhow::Result;
 use argh::FromArgs;
 use hidapi::{DeviceInfo, HidApi};
 
@@ -39,11 +40,7 @@ pub struct CommandRgb {
     pub direct: Option<String>,
 }
 
-pub fn run(
-    api: &HidApi,
-    device: &DeviceInfo,
-    cmd: &CommandRgb,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(api: &HidApi, device: &DeviceInfo, cmd: &CommandRgb) -> Result<()> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
 
