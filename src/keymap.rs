@@ -3,6 +3,7 @@ pub mod buffer;
 
 use crate::protocol;
 use buffer::Buffer;
+use palette::Srgb;
 use serde_json::Value;
 use std::cmp::max;
 use std::collections::HashMap;
@@ -24,6 +25,7 @@ pub struct Button {
     pub layout_options: Option<(u8, u8)>,
     pub encoder: bool,
     pub decal: bool,
+    pub color: Option<(u8, u8, u8)>,
 }
 
 impl Button {
@@ -38,6 +40,7 @@ impl Button {
             layout_options: self.layout_options,
             encoder: self.encoder,
             decal: self.decal,
+            color: self.color,
         }
     }
 }
@@ -103,6 +106,7 @@ pub fn keymap_to_buttons(
     let mut x = 0f64;
     let mut decal = false;
     let mut cluster: (f64, f64) = (0.0, 0.0);
+    let mut color: Option<(u8, u8, u8)> = None;
 
     for row in rows.iter() {
         match row.as_array() {
@@ -152,6 +156,14 @@ pub fn keymap_to_buttons(
                                     "d" => {
                                         decal =
                                             value.as_bool().ok_or(anyhow!("d should be bool"))?
+                                    }
+                                    "c" => {
+                                        let rgb: Srgb<u8> = value
+                                            .as_str()
+                                            .ok_or(anyhow!("r should be a string"))?
+                                            .parse()?;
+                                        let (r, g, b) = rgb.into_components();
+                                        color = Some((r, b, g));
                                     }
                                     &_ => {
                                         // println!("warning ignored value {:?} = {:?}", key, value)
@@ -210,6 +222,7 @@ pub fn keymap_to_buttons(
                                     layout_options,
                                     encoder,
                                     decal,
+                                    color,
                                 }
                             } else {
                                 /*
@@ -249,6 +262,7 @@ pub fn keymap_to_buttons(
                                     layout_options: None,
                                     encoder,
                                     decal,
+                                    color,
                                 }
                                 //return Err(MetaParsingError.into());
                             };
@@ -275,6 +289,7 @@ pub fn keymap_to_buttons(
                 // return Err(MetaParsingError);
             }
         }
+        color = None;
         x = 0.0;
         y = 0.0;
         x_pos = 0.0;
@@ -333,39 +348,44 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                 (b.y + b.h - 1.0).round() as usize,
             );
             if !b.encoder {
-                buff.put(lu.0, lu.1, '╔');
+                buff.put(lu.0, lu.1, '╔', &b.color);
                 for x in (lu.0 + 1)..ru.0 {
-                    buff.put(x, lu.1, '═');
+                    buff.put(x, lu.1, '═', &b.color);
                 }
-                buff.put(ru.0, ru.1, '╗');
+                buff.put(ru.0, ru.1, '╗', &b.color);
                 for y in (lu.1 + 1)..lb.1 {
-                    buff.put(lu.0, y, '║');
+                    buff.put(lu.0, y, '║', &b.color);
                 }
                 for y in (ru.1 + 1)..rb.1 {
-                    buff.put(ru.0, y, '║');
+                    buff.put(ru.0, y, '║', &b.color);
                 }
-                buff.put(lb.0, lb.1, '╚');
+                buff.put(lb.0, lb.1, '╚', &b.color);
                 for x in (lb.0 + 1)..rb.0 {
-                    buff.put(x, lb.1, '═');
+                    buff.put(x, lb.1, '═', &b.color);
                 }
-                buff.put(rb.0, rb.1, '╝');
+                buff.put(rb.0, rb.1, '╝', &b.color);
             } else {
-                buff.put(lu.0, lu.1, '╭');
+                buff.put(lu.0, lu.1, '╭', &b.color);
                 for x in (lu.0 + 1)..ru.0 {
-                    buff.put(x, lu.1, '─');
+                    buff.put(x, lu.1, '─', &b.color);
                 }
-                buff.put(ru.0, ru.1, '╮');
+                buff.put(ru.0, ru.1, '╮', &b.color);
                 for y in (lu.1 + 1)..lb.1 {
-                    buff.put(lu.0, y, '│');
+                    buff.put(lu.0, y, '│', &b.color);
                 }
                 for y in (ru.1 + 1)..rb.1 {
-                    buff.put(ru.0, y, '│');
+                    buff.put(ru.0, y, '│', &b.color);
                 }
-                buff.put(lb.0, lb.1, '╰');
+                buff.put(lb.0, lb.1, '╰', &b.color);
                 for x in (lb.0 + 1)..rb.0 {
-                    buff.put(x, lb.1, '─');
+                    buff.put(x, lb.1, '─', &b.color);
                 }
-                buff.put(rb.0, rb.1, '╯');
+                buff.put(rb.0, rb.1, '╯', &b.color);
+            }
+            for x in (lu.0 + 1)..ru.0 {
+                for y in (lu.1 + 1)..lb.1 {
+                    buff.put(x, y, ' ', &b.color);
+                }
             }
 
             let label_x_shift = if b.w < 3.0 { 1 } else { 0 };
@@ -373,21 +393,26 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
 
             match labels {
                 Some(ref labels) => {
-                    if button.encoder {
+                    if b.encoder {
                         let label = format!(
                             "{}{}",
-                            button.wire_x,
-                            match button.wire_y {
+                            b.wire_x,
+                            match b.wire_y {
                                 0 => '↺',
                                 1 => '↻',
                                 _ => 'x',
                             }
                         );
                         for (i, c) in label.chars().enumerate() {
-                            buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
+                            buff.put(
+                                lu.0 + 1 - label_x_shift + i,
+                                lu.1 - label_y_shift + 1,
+                                c,
+                                &b.color,
+                            );
                         }
                     } else {
-                        match labels.get(&(button.wire_x, button.wire_y)) {
+                        match labels.get(&(b.wire_x, b.wire_y)) {
                             Some(label) => {
                                 // FIXME comma treatment is too ugly :( but works
                                 let mut we_got_comma = false;
@@ -398,6 +423,7 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                                                 lu.0 + 1 - label_x_shift + line,
                                                 lu.1 - label_y_shift + 1,
                                                 ',',
+                                                &b.color,
                                             );
                                             we_got_comma = true;
                                         }
@@ -407,6 +433,7 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                                                 lu.0 + 1 - label_x_shift + i,
                                                 lu.1 + 1 - label_y_shift + line,
                                                 c,
+                                                &b.color,
                                             );
                                         }
                                     }
@@ -419,13 +446,23 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                     }
                 }
                 None => {
-                    let xx = format!("{}", button.wire_x);
-                    let yy = format!("{}", button.wire_y);
+                    let xx = format!("{}", b.wire_x);
+                    let yy = format!("{}", b.wire_y);
                     for (i, c) in xx.chars().enumerate() {
-                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
+                        buff.put(
+                            lu.0 + 1 - label_x_shift + i,
+                            lu.1 - label_y_shift + 1,
+                            c,
+                            &b.color,
+                        );
                     }
                     for (i, c) in yy.chars().enumerate() {
-                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 2, c);
+                        buff.put(
+                            lu.0 + 1 - label_x_shift + i,
+                            lu.1 - label_y_shift + 2,
+                            c,
+                            &b.color,
+                        );
                     }
                 }
             }
