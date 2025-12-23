@@ -289,7 +289,6 @@ pub fn keymap_to_buttons(
                 // return Err(MetaParsingError);
             }
         }
-        color = None;
         x = 0.0;
         y = 0.0;
         x_pos = 0.0;

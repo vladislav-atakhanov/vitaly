@@ -14,10 +14,15 @@ Tool support --help for tool as a whole and for all subcommands.
 
 ## Installation
 
-vitaly might be installed with cargo
+vitaly might be installed with cargo on macosx, linux and windows
 
 ```
 cargo install vitaly
+```
+
+On macosx you can also use homebew to install vitaly with command
+```
+brew install bskaplou/tap/vitaly
 ```
 
 ## Development
