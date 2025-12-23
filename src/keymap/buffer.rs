@@ -47,7 +47,8 @@ impl Buffer {
     pub fn dump(&self) {
         // cut top lines containing only spaces
         let mut spaces_only = true;
-        let mut result = String::new();
+        // capacity is just a bit above typical value for colored kbd
+        let mut result = String::with_capacity(8192);
         let mut last_color: Option<(u8, u8, u8)> = None;
         for line in self.b.iter() {
             if spaces_only {
