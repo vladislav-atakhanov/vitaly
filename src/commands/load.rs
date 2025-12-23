@@ -114,6 +114,17 @@ pub fn run(
 
         protocol::set_layout_options(&dev, layout_state)?;
 
+        if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
+            let qmk_settings = protocol::load_qmk_settings_from_json(
+                root.get("settings")
+                    .ok_or(anyhow!("settings are not defined"))?,
+            )?;
+            for (key, value) in qmk_settings.iter() {
+                protocol::set_qmk_value(&dev, *key, value.get())?;
+            }
+            println!("Settings restored");
+        }
+
         protocol::set_macros(&dev, &capabilities, &macros)?;
         println!("Macros restored");
 
