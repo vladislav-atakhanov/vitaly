@@ -105,7 +105,7 @@ pub fn keymap_to_buttons(
     let mut y = 0f64;
     let mut x = 0f64;
     let mut decal = false;
-    let mut cluster: (f64, f64) = (0.0, 0.0);
+    //let mut cluster: (f64, f64) = (0.0, 0.0);
     let mut color: Option<(u8, u8, u8)> = None;
 
     for row in rows.iter() {
@@ -141,7 +141,7 @@ pub fn keymap_to_buttons(
                                         rx = value
                                             .as_f64()
                                             .ok_or(anyhow!("rx should be a number"))?;
-                                        cluster.0 = rx;
+                                        //cluster.0 = rx;
                                         //x = cluster.0;
                                         //y = cluster.1;
                                     }
@@ -149,7 +149,7 @@ pub fn keymap_to_buttons(
                                         ry = value
                                             .as_f64()
                                             .ok_or(anyhow!("ry should be a number"))?;
-                                        cluster.1 = ry;
+                                        //cluster.1 = ry;
                                         //x = cluster.0;
                                         //y = cluster.1;
                                     }

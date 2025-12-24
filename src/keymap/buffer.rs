@@ -45,6 +45,20 @@ impl Buffer {
     }
 
     pub fn dump(&self) {
+        fn color_line(line: &str, color: Option<(u8, u8, u8)>) -> String {
+            if let Some((r, g, b)) = color {
+                let front_color =
+                    if (r as f64 * 299.0 + g as f64 * 587.0 + b as f64 * 114.0) / 1000.0 > 128.0 {
+                        Color::Black
+                    } else {
+                        Color::White
+                    };
+                let styled = line.to_owned().with(front_color).on(Color::Rgb { r, g, b });
+                format!("{}", styled)
+            } else {
+                line.to_string()
+            }
+        }
         // cut top lines containing only spaces
         let mut spaces_only = true;
         // capacity is just a bit above typical value for colored kbd
@@ -63,29 +77,13 @@ impl Buffer {
                 let mut colored_substring = String::new();
                 for p in line.iter() {
                     if last_color != p.color {
-                        if let Some((r, g, b)) = last_color {
-                            let styled = colored_substring
-                                .to_owned()
-                                .with(Color::Black)
-                                .on(Color::Rgb { r, g, b });
-                            result.push_str(&format!("{}", styled).to_owned());
-                        } else {
-                            result.push_str(&colored_substring);
-                        }
+                        result.push_str(&color_line(&colored_substring, last_color));
                         colored_substring.truncate(0);
                         last_color = p.color;
                     }
                     colored_substring.push(p.sym);
                 }
-                if let Some((r, g, b)) = last_color {
-                    let styled = colored_substring
-                        .to_owned()
-                        .with(Color::Black)
-                        .on(Color::Rgb { r, g, b });
-                    result.push_str(&format!("{}", styled).to_owned());
-                } else {
-                    result.push_str(&colored_substring);
-                }
+                result.push_str(&color_line(&colored_substring, last_color));
                 last_color = None;
                 result.push('\n');
             }
