@@ -23,10 +23,20 @@ pub fn run(api: &HidApi, device: &DeviceInfo, unlock: bool, lock: bool) -> Resul
             let layout_options = &meta["layouts"]["labels"];
             let state = protocol::load_layout_options(&dev)?;
             let options = protocol::LayoutOptions::from_json(state, layout_options)?;
-            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &options)?;
+            let mut buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &options)?;
             let mut button_labels = HashMap::new();
             for (row, col) in &status.unlock_buttons {
                 button_labels.insert((*row, *col), "☆☆,☆☆".to_string());
+            }
+            for button in &mut buttons {
+                button.color = if status
+                    .unlock_buttons
+                    .contains(&(button.wire_x, button.wire_y))
+                {
+                    Some((255, 255, 255))
+                } else {
+                    None
+                };
             }
             keymap::render_and_dump(&buttons, Some(button_labels));
             if !status.unlock_in_progress {
