@@ -643,12 +643,13 @@ pub struct MatrixState {
 }
 
 impl MatrixState {
-    pub fn is_pushed(&self, row: u8, col: u8) -> Result<bool> {
+    pub fn is_pushed(&self, row: u8, col: u8, via_version: u8) -> Result<bool> {
+        let shift = if via_version < 12 { 2 } else { 3 };
         let row_size = (((self.cols as f64) / 8.0).ceil()) as u8;
-        let row_data_start = 2 + (row * row_size);
+        let row_data_start = shift + (row * row_size);
         let row_data_end = row_data_start + row_size;
         let row_data: &[u8] = &self.data[row_data_start as usize..row_data_end as usize];
-        let col_byte = row_data.len() - 1 - (col as f64 / 8.0) as usize;
+        let col_byte = row_data.len() - 1 - (col as f64 / 8.0).floor() as usize;
         let col_mod = col % 8;
         Ok((row_data[col_byte] >> col_mod) & 1 != 0)
     }

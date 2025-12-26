@@ -32,11 +32,6 @@ pub fn run(api: &HidApi, device: &DeviceInfo, meta_file: &Option<String>) -> Res
         if status.locked {
             return Err(common::CommandError("Keyboard is locked, it's necessary to unlock it to run tester, keyboard might be unlocked with subcommand 'lock -u'".to_string()).into());
         }
-    } else {
-        return Err(common::CommandError(
-            "Testing is supported only for vial keyboards for now.".to_string(),
-        )
-        .into());
     }
     println!("Tap buttons. Press Ctrl+c to finish.");
 
@@ -46,7 +41,7 @@ pub fn run(api: &HidApi, device: &DeviceInfo, meta_file: &Option<String>) -> Res
             && state != last_state
         {
             for button in &mut buttons {
-                if state.is_pushed(button.wire_x, button.wire_y)? {
+                if state.is_pushed(button.wire_x, button.wire_y, capabilities.via_version)? {
                     button.color = Some((255, 255, 255));
                 } else if button.color.is_some() {
                     button.color = Some((150, 150, 150));
