@@ -76,6 +76,7 @@ pub const CMD_VIA_KEYMAP_GET_BUFFER: u8 = 0x12;
 
 pub const VIA_UNHANDLED: u8 = 0xFF;
 pub const VIA_LAYOUT_OPTIONS: u8 = 0x02;
+pub const VIA_SWITCH_MATRIX_STATE: u8 = 0x03;
 
 pub const CMD_VIAL_DYNAMIC_ENTRY_OP: u8 = 0x0D;
 pub const DYNAMIC_VIAL_GET_NUMBER_OF_ENTRIES: u8 = 0x00;
@@ -630,6 +631,35 @@ pub fn load_uid(device: &HidDevice) -> Result<u64> {
             let uid: u64 = u64::from_le_bytes(uid_bytes);
             Ok(uid)
         }
+        Err(e) => Err(e),
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MatrixState {
+    rows: u8,
+    cols: u8,
+    data: [u8; 32],
+}
+
+impl MatrixState {
+    pub fn is_pushed(&self, row: u8, col: u8) -> Result<bool> {
+        let row_size = (((self.cols as f64) / 8.0).ceil()) as u8;
+        let row_data_start = 2 + (row * row_size);
+        let row_data_end = row_data_start + row_size;
+        let row_data: &[u8] = &self.data[row_data_start as usize..row_data_end as usize];
+        let col_byte = row_data.len() - 1 - (col as f64 / 8.0) as usize;
+        let col_mod = col % 8;
+        Ok((row_data[col_byte] >> col_mod) & 1 != 0)
+    }
+}
+
+pub fn matrix_poll(device: &HidDevice, rows: u8, cols: u8) -> Result<MatrixState> {
+    match send_recv(
+        device,
+        &[CMD_VIA_GET_KEYBOARD_VALUE, VIA_SWITCH_MATRIX_STATE],
+    ) {
+        Ok(data) => Ok(MatrixState { rows, cols, data }),
         Err(e) => Err(e),
     }
 }

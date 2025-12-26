@@ -45,6 +45,7 @@ enum CommandEnum {
     Save(CommandSave),
     Rgb(commands::CommandRgb),
     Layout(CommandLayout),
+    Tester(CommandTester),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -257,6 +258,15 @@ struct CommandEncoders {
     value: Option<String>,
 }
 
+#[derive(FromArgs, PartialEq, Debug)]
+/// Matrix tester
+#[argh(subcommand, name = "tester")]
+struct CommandTester {
+    /// meta file (to use instead of vial meta)
+    #[argh(option, short = 'm')]
+    meta: Option<String>,
+}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -335,6 +345,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::Layout(ops) => {
                             commands::layout_run(&api, device, &ops.meta, &ops.option, &ops.value)
                         }
+                        CommandEnum::Tester(ops) => commands::tester_run(&api, device, &ops.meta),
                     };
                     match result {
                         Ok(_) => {

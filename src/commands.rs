@@ -42,3 +42,6 @@ pub use crate::commands::devices::run as devices_run;
 
 mod combos;
 pub use crate::commands::combos::run as combos_run;
+
+mod tester;
+pub use crate::commands::tester::run as tester_run;
