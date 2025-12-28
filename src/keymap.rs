@@ -95,17 +95,13 @@ pub fn keymap_to_buttons(
         .ok_or(anyhow!("keymap should be an array"))?;
     let mut x_pos = 0f64;
     let mut y_pos = 0f64;
-    let mut x_mod = 0f64;
-    let mut y_mod = 0f64;
     let mut rx = 0f64;
     let mut ry = 0f64;
     let mut w = 1f64;
     let mut h = 1f64;
     let mut r = 0f64;
-    let mut y = 0f64;
-    let mut x = 0f64;
     let mut decal = false;
-    //let mut cluster: (f64, f64) = (0.0, 0.0);
+    let mut cluster: (f64, f64) = (0.0, 0.0);
     let mut color: Option<(u8, u8, u8)> = None;
 
     for row in rows.iter() {
@@ -117,16 +113,16 @@ pub fn keymap_to_buttons(
                             for (key, value) in item {
                                 match key.as_str() {
                                     "x" => {
-                                        x = value
+                                        let x = value
                                             .as_f64()
                                             .ok_or(anyhow!("x should be a number"))?;
-                                        x_mod += x;
+                                        x_pos += x;
                                     }
                                     "y" => {
-                                        y = value
+                                        let y = value
                                             .as_f64()
                                             .ok_or(anyhow!("y should be a number"))?;
-                                        y_mod += y;
+                                        y_pos += y;
                                     }
                                     "w" => {
                                         w = value.as_f64().ok_or(anyhow!("w should be a number"))?
@@ -141,17 +137,17 @@ pub fn keymap_to_buttons(
                                         rx = value
                                             .as_f64()
                                             .ok_or(anyhow!("rx should be a number"))?;
-                                        //cluster.0 = rx;
-                                        //x = cluster.0;
-                                        //y = cluster.1;
+                                        cluster.0 = rx;
+                                        x_pos = cluster.0;
+                                        y_pos = cluster.1;
                                     }
                                     "ry" => {
                                         ry = value
                                             .as_f64()
                                             .ok_or(anyhow!("ry should be a number"))?;
-                                        //cluster.1 = ry;
-                                        //x = cluster.0;
-                                        //y = cluster.1;
+                                        cluster.1 = ry;
+                                        x_pos = cluster.0;
+                                        y_pos = cluster.1;
                                     }
                                     "d" => {
                                         decal =
@@ -196,9 +192,7 @@ pub fn keymap_to_buttons(
                                     if let Some((l, r)) = s.split_once(',') {
                                         let (l, r) = (l.parse()?, r.parse()?);
                                         if r == 0 {
-                                            option_groups
-                                                .entry(l)
-                                                .or_insert((x_pos + x_mod, y_pos + y_mod));
+                                            option_groups.entry(l).or_insert((x_pos, y_pos));
                                         }
                                         Some((l, r))
                                     } else {
@@ -208,8 +202,14 @@ pub fn keymap_to_buttons(
                                 None => None,
                             };
                             let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
-                                let bx = x_pos + x_mod;
-                                let by = y_pos + y_mod;
+                                /*
+                                println!(
+                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x_pos = {:?}, y_pos = {:?}",
+                                    xx, yy, r, rx, ry, x_pos, y_pos,
+                                );
+                                */
+                                let bx = x_pos;
+                                let by = y_pos;
                                 let bw = w;
                                 let bh = h;
                                 Button {
@@ -227,8 +227,8 @@ pub fn keymap_to_buttons(
                             } else {
                                 /*
                                 println!(
-                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
-                                    xx, yy, r, rx, ry, x, y, x_mod, y_mod,
+                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x_pos = {:?}, y_pos = {:?}, w = {:?}, h = {:?}",
+                                    xx, yy, r, rx, ry, x_pos, y_pos, w, h,
                                 );
                                 */
                                 let theta = -r.to_radians();
@@ -236,8 +236,8 @@ pub fn keymap_to_buttons(
                                 let theta_cos = theta.cos();
                                 let bx;
                                 let by;
-                                // y_shift is heuristic parsed while I was trying
-                                // to make sofle render properly
+                                let x = x_pos - rx;
+                                let y = y_pos - ry;
                                 let y_shift = if y.abs() < 1.0 || r == 0.0 { 1.0 } else { 0.0 };
                                 if r >= 0.0 {
                                     bx = x * theta_cos + y * theta_sin + rx;
@@ -247,16 +247,14 @@ pub fn keymap_to_buttons(
                                     // and shift back -w
                                     // otherwise mirrored part will be
                                     // vertically shifted
-                                    bx = (x + w) * theta_cos + y * theta_sin + rx - w;
+                                    bx = (x + w) * theta_cos + y * theta_sin - w + rx;
                                     by = -(x + w) * theta_sin + y * theta_cos + ry + y_shift;
                                 }
-                                let bw = 1.0;
-                                let bh = 1.0;
                                 Button {
                                     x: bx,
                                     y: by,
-                                    w: bw,
-                                    h: bh,
+                                    w,
+                                    h,
                                     wire_x: xx,
                                     wire_y: yy,
                                     layout_options: None,
@@ -268,13 +266,10 @@ pub fn keymap_to_buttons(
                             };
                             if matches(&via_options, layout_options) || decal {
                                 buttons.push(but);
-                            } else {
-                                //w = 0.0;
                             }
-                            x_pos += x_mod + w;
+                            x_pos += w;
                             w = 1.0;
                             h = 1.0;
-                            x_mod = 0.0;
                             decal = false;
                             //println!("! {:?} => {:?}", item.as_str().unwrap(), &but);
                         }
@@ -289,11 +284,8 @@ pub fn keymap_to_buttons(
                 // return Err(MetaParsingError);
             }
         }
-        x = 0.0;
-        y = 0.0;
-        x_pos = 0.0;
         y_pos += 1.0;
-        //r = 0.0;
+        x_pos = rx;
     }
     // this logic tries to follow via layout_options choices in a following way
     // option_groups contains coordinates of first default (x, 0) button
