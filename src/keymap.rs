@@ -8,6 +8,7 @@ use serde_json::Value;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::mem;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -239,15 +240,27 @@ pub fn keymap_to_buttons(
                                 let x = x_pos - rx;
                                 let y = y_pos - ry;
                                 if r >= 0.0 {
-                                    bx = x * theta_cos + y * theta_sin + rx;
-                                    by = -x * theta_sin + y * theta_cos + ry;
+                                    if r < 45.0 {
+                                        bx = x * theta_cos + y * theta_sin + rx;
+                                        by = -x * theta_sin + y * theta_cos + ry;
+                                    } else {
+                                        bx = x * theta_cos + y * theta_sin - h + rx;
+                                        by = -x * theta_sin + y * theta_cos + ry;
+                                        mem::swap(&mut w, &mut h);
+                                    }
                                 } else {
                                     // for negative angle rotate right corner
                                     // and shift back -w
                                     // otherwise mirrored part will be
                                     // vertically shifted
-                                    bx = (x + w) * theta_cos + y * theta_sin - w + rx;
-                                    by = -(x + w) * theta_sin + y * theta_cos + ry;
+                                    if r > -45.0 {
+                                        bx = (x + w) * theta_cos + y * theta_sin - w + rx;
+                                        by = -(x + w) * theta_sin + y * theta_cos + ry;
+                                    } else {
+                                        bx = (x + w) * theta_cos + y * theta_sin + rx;
+                                        by = -(x + w) * theta_sin + y * theta_cos + ry;
+                                        mem::swap(&mut w, &mut h);
+                                    }
                                 }
                                 Button {
                                     x: bx,

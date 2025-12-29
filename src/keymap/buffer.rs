@@ -1,3 +1,4 @@
+use atty;
 use crossterm::style::{Color, Stylize};
 
 #[derive(Debug, Clone)]
@@ -59,6 +60,9 @@ impl Buffer {
                 line.to_string()
             }
         }
+        // no coloring with esc in case of output is not tty
+        let colored = atty::is(atty::Stream::Stdout);
+
         // cut top lines containing only spaces
         let mut spaces_only = true;
 
@@ -77,7 +81,7 @@ impl Buffer {
             if !spaces_only {
                 let mut colored_substring = String::new();
                 for p in line.iter() {
-                    if last_color != p.color {
+                    if colored && last_color != p.color {
                         result.push_str(&color_line(&colored_substring, last_color));
                         colored_substring.truncate(0);
                         last_color = p.color;
