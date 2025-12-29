@@ -238,17 +238,16 @@ pub fn keymap_to_buttons(
                                 let by;
                                 let x = x_pos - rx;
                                 let y = y_pos - ry;
-                                let y_shift = if y.abs() < 1.0 || r == 0.0 { 1.0 } else { 0.0 };
                                 if r >= 0.0 {
                                     bx = x * theta_cos + y * theta_sin + rx;
-                                    by = -x * theta_sin + y * theta_cos + ry + y_shift;
+                                    by = -x * theta_sin + y * theta_cos + ry;
                                 } else {
                                     // for negative angle rotate right corner
                                     // and shift back -w
                                     // otherwise mirrored part will be
                                     // vertically shifted
                                     bx = (x + w) * theta_cos + y * theta_sin - w + rx;
-                                    by = -(x + w) * theta_sin + y * theta_cos + ry + y_shift;
+                                    by = -(x + w) * theta_sin + y * theta_cos + ry;
                                 }
                                 Button {
                                     x: bx,
@@ -280,8 +279,8 @@ pub fn keymap_to_buttons(
                 }
             }
             None => {
-                // sometimes first element is dict
-                // return Err(MetaParsingError);
+                // sometimes first element is dict we should compensate y_pos increment
+                y_pos -= 1.0;
             }
         }
         y_pos += 1.0;
