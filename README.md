@@ -8,8 +8,6 @@ RGB lighting control is supported too.
 
 Non-colored underglow is not supported for now because there is no devices with such features around me for now.
 
-Layouts with no rotation are supproted and displays well. Layouts with rotated buttons might have problems in rendering of layers.
-
 Tool support --help for tool as a whole and for all subcommands.
 
 ## Installation
