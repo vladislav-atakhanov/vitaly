@@ -18,6 +18,14 @@ vitaly might be installed with cargo on macosx, linux and windows
 cargo install vitaly
 ```
 
+On linux you'll need to install libudev-dev depending on your linux dist something like
+
+```
+sudo apt install libudev-dev
+```
+
+On windows you'll need vcpkg https://github.com/microsoft/vcpkg
+
 On macosx you can also use homebew to install vitaly with command
 ```
 brew install bskaplou/tap/vitaly
