@@ -46,6 +46,7 @@ enum CommandEnum {
     Rgb(commands::CommandRgb),
     Layout(CommandLayout),
     Tester(CommandTester),
+    Bootload(CommandBootload),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -267,6 +268,11 @@ struct CommandTester {
     meta: Option<String>,
 }
 
+#[derive(FromArgs, PartialEq, Debug)]
+/// Push keyboard into bootloader mode
+#[argh(subcommand, name = "bootload")]
+struct CommandBootload {}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -346,6 +352,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             commands::layout_run(&api, device, &ops.meta, &ops.option, &ops.value)
                         }
                         CommandEnum::Tester(ops) => commands::tester_run(&api, device, &ops.meta),
+                        CommandEnum::Bootload(_) => commands::bootload_run(&api, device),
                     };
                     match result {
                         Ok(_) => {

@@ -66,6 +66,7 @@ pub const VIAL_PROTOCOL_QMK_SETTINGS: u32 = 4;
 pub const CMD_VIA_GET_PROTOCOL_VERSION: u8 = 0x01;
 pub const CMD_VIA_GET_KEYBOARD_VALUE: u8 = 0x02;
 pub const CMD_VIA_SET_KEYBOARD_VALUE: u8 = 0x03;
+pub const CMD_VIA_BOOTLOADER_JUMP: u8 = 0x0B;
 pub const CMD_VIA_VIAL_PREFIX: u8 = 0xFE;
 pub const CMD_VIAL_GET_KEYBOARD_ID: u8 = 0x00;
 pub const CMD_VIAL_GET_SIZE: u8 = 0x01;
@@ -661,6 +662,13 @@ pub fn matrix_poll(device: &HidDevice, rows: u8, cols: u8) -> Result<MatrixState
         &[CMD_VIA_GET_KEYBOARD_VALUE, VIA_SWITCH_MATRIX_STATE],
     ) {
         Ok(data) => Ok(MatrixState { rows, cols, data }),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn bootloader_jump(device: &HidDevice) -> Result<()> {
+    match send_recv(device, &[CMD_VIA_BOOTLOADER_JUMP]) {
+        Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
 }

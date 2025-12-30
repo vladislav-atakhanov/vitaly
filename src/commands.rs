@@ -45,3 +45,6 @@ pub use crate::commands::combos::run as combos_run;
 
 mod tester;
 pub use crate::commands::tester::run as tester_run;
+
+mod bootload;
+pub use crate::commands::bootload::run as bootload_run;
