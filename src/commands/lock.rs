@@ -2,8 +2,11 @@ use crate::common;
 use crate::keymap;
 use crate::protocol;
 use anyhow::Result;
+use crossterm::cursor;
 use hidapi::{DeviceInfo, HidApi};
 use std::collections::HashMap;
+use std::io;
+use std::io::Write;
 use std::{thread, time};
 
 pub fn run(api: &HidApi, device: &DeviceInfo, unlock: bool, lock: bool) -> Result<()> {
@@ -48,13 +51,15 @@ pub fn run(api: &HidApi, device: &DeviceInfo, unlock: bool, lock: bool) -> Resul
             while !unlocked {
                 thread::sleep(sleep_duration);
                 (unlocked, polls_remaining) = protocol::unlock_poll(&dev)?;
-                println!(
+                print!("{}", cursor::MoveToColumn(0));
+                print!(
                     "Seconds remaining: {} keep pushing...",
                     (polls_remaining as f64) / 10.0
                 );
+                io::stdout().flush()?;
             }
             status = protocol::get_locked_status(&dev)?;
-            println!("Device is locked: {}", status.locked);
+            println!("\nDevice is locked: {}", status.locked);
         } else if !status.locked && lock {
             println!("Locking keyboard...");
             protocol::set_locked(&dev)?;

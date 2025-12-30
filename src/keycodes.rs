@@ -320,4 +320,76 @@ mod tests {
         assert_eq!(qid_to_name(0xE1, 5), "KC_LEFT_SHIFT");
         assert_eq!(qid_to_name(0xE5, 5), "KC_RIGHT_SHIFT");
     }
+
+    #[test]
+    fn test_vial6_short_lt() {
+        assert_eq!(
+            name_to_qid("LT(1, KC_1)", 6).unwrap(),
+            name_to_qid("LT1(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(2, KC_1)", 6).unwrap(),
+            name_to_qid("LT2(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(3, KC_1)", 6).unwrap(),
+            name_to_qid("LT3(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(4, KC_1)", 6).unwrap(),
+            name_to_qid("LT4(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(5, KC_1)", 6).unwrap(),
+            name_to_qid("LT5(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(6, KC_1)", 6).unwrap(),
+            name_to_qid("LT6(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(7, KC_1)", 6).unwrap(),
+            name_to_qid("LT7(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(8, KC_1)", 6).unwrap(),
+            name_to_qid("LT8(KC_1)", 6).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_vial5_short_lt() {
+        assert_eq!(
+            name_to_qid("LT(1, KC_1)", 5).unwrap(),
+            name_to_qid("LT1(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(2, KC_1)", 5).unwrap(),
+            name_to_qid("LT2(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(3, KC_1)", 5).unwrap(),
+            name_to_qid("LT3(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(4, KC_1)", 5).unwrap(),
+            name_to_qid("LT4(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(5, KC_1)", 5).unwrap(),
+            name_to_qid("LT5(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(6, KC_1)", 5).unwrap(),
+            name_to_qid("LT6(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(7, KC_1)", 5).unwrap(),
+            name_to_qid("LT7(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(8, KC_1)", 5).unwrap(),
+            name_to_qid("LT8(KC_1)", 5).unwrap()
+        );
+    }
 }

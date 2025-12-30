@@ -144,6 +144,38 @@ pub fn name_to_qid(name: &str) -> Result<u16> {
                     keycode = 0x4000 | ((l & 0x0F) << 8) | (k & 0xFF);
                 }
             },
+            "LT1" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (1 << 8) | (k & 0xFF);
+            }
+            "LT2" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (2 << 8) | (k & 0xFF);
+            }
+            "LT3" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (3 << 8) | (k & 0xFF);
+            }
+            "LT4" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (4 << 8) | (k & 0xFF);
+            }
+            "LT5" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (5 << 8) | (k & 0xFF);
+            }
+            "LT6" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (6 << 8) | (k & 0xFF);
+            }
+            "LT7" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (7 << 8) | (k & 0xFF);
+            }
+            "LT8" => {
+                let k = name_to_qid(&right)?;
+                keycode = 0x4000 | (8 << 8) | (k & 0xFF);
+            }
             "MT" => match right.split_once(",") {
                 None => {
                     return Err(KeyParsingError(

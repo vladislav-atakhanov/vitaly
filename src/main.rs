@@ -370,7 +370,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
 fn main() {
     let options: VialClient = argh::from_env();
     if options.version {
-        println!("vitaly {}", env!("CARGO_PKG_VERSION"))
+        println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
     } else if let Some(command) = options.command {
         command_for_devices(options.id, &command);
     } else {
