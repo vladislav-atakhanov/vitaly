@@ -1,5 +1,9 @@
 # Vial CLI tool
 
+[![crates.io](https://img.shields.io/crates/v/vitaly.svg)](https://crates.io/crates/vitaly)
+[![docs.rs](https://docs.rs/vitaly/badge.svg)](https://docs.rs/crate/vitaly/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Vial CLI tool allows to configure keyboard through VIA/Vial protocol with command line interface.
 It supports QMK keycodes notation together with aliases.
 
