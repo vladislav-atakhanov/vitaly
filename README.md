@@ -28,16 +28,12 @@ On linux you'll need to install libudev-dev depending on your linux dist somethi
 sudo apt install libudev-dev
 ```
 
-On windows you'll need vcpkg https://github.com/microsoft/vcpkg and run
-
-```
-vcpkg install liblzma:x64-windows-static-md
-```
-
 On macosx you can also use homebew to install vitaly with command
 ```
 brew install bskaplou/tap/vitaly
 ```
+
+Prebuilt binary installation instructions for Windows and MacOSX are here https://github.com/bskaplou/vitaly/releases/latest
 
 ## Development
 
