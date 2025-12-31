@@ -1,8 +1,9 @@
 use anyhow::{Result, anyhow};
 use hidapi::{HidDevice, HidError, HidResult};
-use lzma::LzmaError;
+use lzma_rust2::XzReader;
 use serde_json::Value;
 use std::cmp::min;
+use std::io::Read;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -132,8 +133,6 @@ pub enum ProtocolError {
     ViaUnhandledError,
     #[error("HidError {0}")]
     HidError(#[from] HidError),
-    #[error("LzmaError {0}")]
-    LzmaError(#[from] LzmaError),
     #[error("UTF8Error {0}")]
     FromUtf8Error(#[from] FromUtf8Error),
     #[error("JsonError {0}")]
@@ -374,8 +373,17 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value> {
         }
         block += 1;
     }
-    let meta_str = String::from_utf8(lzma::decompress(&raw_meta)?)?;
-    //println!("{}", meta_str);
+    let mut reader = XzReader::new(raw_meta.as_slice(), true);
+    let mut buf = [0; 1024];
+    let mut out = Vec::new();
+    loop {
+        let n = reader.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        out.extend_from_slice(&buf[..n]);
+    }
+    let meta_str = String::from_utf8(out)?;
     let meta: Value = serde_json::from_str(&meta_str)?;
     Ok(meta)
 }
