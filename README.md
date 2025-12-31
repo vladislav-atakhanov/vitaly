@@ -33,7 +33,7 @@ On macosx you can also use homebew to install vitaly with command
 brew install bskaplou/tap/vitaly
 ```
 
-Prebuilt binary installation instructions for Windows and MacOSX are here https://github.com/bskaplou/vitaly/releases/latest
+Prebuilt binary and installation instructions for Windows, MacOSX, Linux are here https://github.com/bskaplou/vitaly/releases/latest
 
 ## Development
 
