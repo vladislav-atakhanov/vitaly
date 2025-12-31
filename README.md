@@ -28,7 +28,7 @@ On linux you'll need to install libudev-dev depending on your linux dist somethi
 sudo apt install libudev-dev
 ```
 
-On macosx you can also use homebew to install vitaly with command
+On macosx and linux you can also use homebew to install vitaly with command
 ```
 brew install bskaplou/tap/vitaly
 ```
