@@ -355,6 +355,34 @@ mod tests {
             name_to_qid("LT(8, KC_1)", 6).unwrap(),
             name_to_qid("LT8(KC_1)", 6).unwrap()
         );
+        assert_eq!(
+            name_to_qid("LT(9, KC_1)", 6).unwrap(),
+            name_to_qid("LT9(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(10, KC_1)", 6).unwrap(),
+            name_to_qid("LT10(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(11, KC_1)", 6).unwrap(),
+            name_to_qid("LT11(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(12, KC_1)", 6).unwrap(),
+            name_to_qid("LT12(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(13, KC_1)", 6).unwrap(),
+            name_to_qid("LT13(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(14, KC_1)", 6).unwrap(),
+            name_to_qid("LT14(KC_1)", 6).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(15, KC_1)", 6).unwrap(),
+            name_to_qid("LT15(KC_1)", 6).unwrap()
+        );
     }
 
     #[test]
@@ -390,6 +418,34 @@ mod tests {
         assert_eq!(
             name_to_qid("LT(8, KC_1)", 5).unwrap(),
             name_to_qid("LT8(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(9, KC_1)", 5).unwrap(),
+            name_to_qid("LT9(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(10, KC_1)", 5).unwrap(),
+            name_to_qid("LT10(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(11, KC_1)", 5).unwrap(),
+            name_to_qid("LT11(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(12, KC_1)", 5).unwrap(),
+            name_to_qid("LT12(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(13, KC_1)", 5).unwrap(),
+            name_to_qid("LT13(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(14, KC_1)", 5).unwrap(),
+            name_to_qid("LT14(KC_1)", 5).unwrap()
+        );
+        assert_eq!(
+            name_to_qid("LT(15, KC_1)", 5).unwrap(),
+            name_to_qid("LT15(KC_1)", 5).unwrap()
         );
     }
 }
