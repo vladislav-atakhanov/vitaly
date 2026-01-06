@@ -62,13 +62,17 @@ pub fn render_layer(
             Value::Array(custom) => {
                 let mut result: Vec<String> = Vec::new();
                 for (idx, code) in custom.iter().enumerate() {
-                    let name = code
+                    let custom_keycode = code
                         .as_object()
-                        .ok_or(anyhow!("customKeycode elements should be objects"))?
-                        .get("shortName")
-                        .ok_or(anyhow!("shortName should be defined"))?
+                        .ok_or(anyhow!("customKeycode elements should be objects"))?;
+                    let mut name = custom_keycode.get("shortName");
+                    if name.is_none() {
+                        name = custom_keycode.get("name");
+                    }
+                    let name = name
+                        .ok_or(anyhow!("shortName or name should be defined"))?
                         .as_str()
-                        .ok_or(anyhow!("shortName should be a string"))?
+                        .ok_or(anyhow!("shortName/name should be a string"))?
                         .replace('\n', " ");
                     result.push(format!("QK_KB_{} - {}", idx, name));
                 }
