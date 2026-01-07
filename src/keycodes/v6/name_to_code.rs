@@ -891,7 +891,7 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
 
     // vial's alisases
     m.insert("KC_LSHIFT", *m.get("KC_LEFT_SHIFT").unwrap());
-    m.insert("KC_RSHIFT", *m.get("KC_LEFT_SHIFT").unwrap());
+    m.insert("KC_RSHIFT", *m.get("KC_RIGHT_SHIFT").unwrap());
     m.insert("KC_RCTRL", *m.get("KC_RIGHT_CTRL").unwrap());
     m.insert("KC_LCTRL", *m.get("KC_LEFT_CTRL").unwrap());
     m.insert("KC_SCOLON", *m.get("KC_SEMICOLON").unwrap());
@@ -913,6 +913,9 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("KC_BTN7", *m.get("QK_MOUSE_BUTTON_7").unwrap());
     m.insert("KC_BTN8", *m.get("QK_MOUSE_BUTTON_8").unwrap());
     m.insert("KC_NUMLOCK", *m.get("KC_NUM_LOCK").unwrap());
+    m.insert("KC_CAPSLOCK", *m.get("KC_CAPS_LOCK").unwrap());
+    m.insert("KC_CAPS", *m.get("KC_CAPS_LOCK").unwrap());
+    m.insert("KC_CLCK", *m.get("KC_CAPS_LOCK").unwrap());
     m.insert("KC_BSPACE", *m.get("KC_BACKSPACE").unwrap());
     m.insert("KC_BSLASH", *m.get("KC_BACKSLASH").unwrap());
     m.insert("KC_LBRACKET", *m.get("KC_LEFT_BRACKET").unwrap());

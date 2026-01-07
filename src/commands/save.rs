@@ -182,6 +182,6 @@ pub fn run(
     }
 
     fs::write(file, result.to_string())?;
-    println!("\nConfigutaion saved to file {}", file);
+    println!("\nConfiguration saved to file {}", file);
     Ok(())
 }
