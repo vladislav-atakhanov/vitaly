@@ -344,9 +344,9 @@ Layer: 2
 *1 - QK_LAYER_LOCK
 ```
 
-By default layers command reads keyboard layout data straight from keyboard but it works only for Vial keyboards,
-VIA keyboards doesn't have layout data in keyboard memory and it's necessary to pass metadata file as an argument
-Such a files can be downloaded from here https://github.com/the-via/keyboards/tree/master/src
+For keyboards with vial protocol support vitaly downloads vial.json file straight from the keyboard.
+For via-only keyboards vitaly will try to download keyboard specification from https://github.com/the-via/keyboards/tree/master/src.
+If specification of via-only keyboard not published on the-via/keyboards or it doesn't match your firmware repository specification file can be passed with -m option.
 
 
 ```
@@ -377,15 +377,6 @@ Layer: 0
 ╚═══╝╚═══╝╚═══╝╚═══════════════════════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝
 *1 - QK_BACKLIGHT_STEP
 ```
-
-::: warning
-For now vitaly doesn't support keybord meta files with rotated buttons, support might be added later
-:::
-
-::: warning
---meta option is temporary solution, later keyboard metadata database can be embedded into application
-:::
-
 
 ### Keys subcommand
 

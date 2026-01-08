@@ -13,6 +13,40 @@ use thiserror::Error;
 #[error("{0}")]
 pub struct CommandError(pub String);
 
+fn load_via_meta_ref(vendor_id: u16, product_id: u16) -> Result<Option<String>> {
+    let link_head = "https://raw.githubusercontent.com/the-via/keyboards/refs/heads/master/src/";
+    let via_meta_json = include_str!("via_meta_refs.json");
+    let vial_meta: Value = serde_json::from_str(via_meta_json)?;
+    let key = format!("{:#06x}_{:#06x}", vendor_id, product_id);
+    if let Some(path) = vial_meta
+        .as_object()
+        .ok_or(anyhow!("bad meta-dict file"))?
+        .get(&key)
+    {
+        let result = format!(
+            "{link_head}{}",
+            path.as_str().ok_or(anyhow!("bad meta-dict format"))?
+        );
+        Ok(Some(result.to_string()))
+    } else {
+        Ok(None)
+    }
+}
+
+fn load_via_meta(dev: &HidDevice) -> Result<String> {
+    let di = dev.get_device_info()?;
+    let url = load_via_meta_ref(di.vendor_id(), di.product_id())?;
+    if let Some(url) = url {
+        println!("Using default keyboard specification file {}", url);
+        let meta_str = ureq::get(url).call()?.body_mut().read_to_string()?;
+        Ok(meta_str.to_string())
+    } else {
+        Err(anyhow!(
+            "failed to find external meta file, please find metadata file and pass it with -m argument"
+        ))
+    }
+}
+
 pub fn load_meta(
     dev: &HidDevice,
     capabilities: &protocol::Capabilities,
@@ -26,23 +60,21 @@ pub fn load_meta(
         }
         None => {
             if capabilities.vial_version == 0 {
-                return Err(CommandError(
-                    "device doesn't support vial protocol"
-                        .to_string()
-                        .to_string(),
-                )
-                .into());
+                let meta_str = load_via_meta(dev)?;
+                let meta: Value = serde_json::from_str(&meta_str)?;
+                Ok(meta)
+            } else {
+                let meta_data = match protocol::load_vial_meta(dev) {
+                    Ok(meta_data) => meta_data,
+                    Err(e) => {
+                        return Err(CommandError(
+                            format!("failed to load vial meta {:?}", e).to_string(),
+                        )
+                        .into());
+                    }
+                };
+                Ok(meta_data)
             }
-            let meta_data = match protocol::load_vial_meta(dev) {
-                Ok(meta_data) => meta_data,
-                Err(e) => {
-                    return Err(CommandError(
-                        format!("failed to load vial meta {:?}", e).to_string(),
-                    )
-                    .into());
-                }
-            };
-            Ok(meta_data)
         }
     }
 }

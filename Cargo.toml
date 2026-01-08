@@ -1,6 +1,6 @@
 [package]
 name = "vitaly"
-version = "0.1.30"
+version = "0.1.31"
 edition = "2024"
 description = "VIA/Vial API client and cli tool for guiless keyboard configuration."
 license = "MIT"
@@ -21,6 +21,7 @@ lzma-rust2 = "0.15.4"
 palette = "0.7.6"
 serde_json = "1.0.145"
 thiserror = "2.0.17"
+ureq = "3.1.4"
 
 # The profile that 'dist' will build with
 [profile.dist]
