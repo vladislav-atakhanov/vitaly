@@ -5,7 +5,7 @@ import json
 def load(path, file):
     with open(f"{path}/{file}") as fd:
         data = json.loads(fd.read())
-    return data['vendorId'].lower(), data['productId'].lower()
+    return int(data['vendorId'].lower(), 16), int(data['productId'].lower(), 16)
 
 cut = 'keyboards/src'
 cut_len = sys.argv[1].index(cut) + len(cut) + 1
@@ -15,6 +15,6 @@ for (path, dirs, files) in os.walk(sys.argv[1]):
     for file in files:
         if file.endswith('.json'):
             vendor_id, product_id = load(path, file)
-            refs[f"{vendor_id}_{product_id}"] = f"{path[cut_len:]}/{file}"
+            refs[f"{vendor_id:#06x}_{product_id:#06x}"] = f"{path[cut_len:]}/{file}"
 
 print(json.dumps(refs, indent=4))
