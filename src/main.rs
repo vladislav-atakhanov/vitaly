@@ -246,7 +246,7 @@ struct CommandLayout {
 /// Encoders operations
 #[argh(subcommand, name = "encoders")]
 struct CommandEncoders {
-    /// elncoder layer
+    /// encoder layer
     #[argh(option, short = 'l')]
     layer: u8,
 

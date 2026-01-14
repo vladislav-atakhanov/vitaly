@@ -34,6 +34,7 @@ pub fn run(api: &HidApi, device: &DeviceInfo, meta_file: &Option<String>) -> Res
         }
     }
     println!("Tap buttons. Press Ctrl+c to finish.");
+    keymap::render_and_dump(&buttons, None);
 
     loop {
         let state = protocol::matrix_poll(&dev, rows, cols)?;

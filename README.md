@@ -120,6 +120,44 @@ Capabilities:
 	layer_lock: true
 ```
 
+### Lock subcommand
+
+Lock subcommand allows to check lock status and to lock/unlock keyboard.
+
+```
+❯ vitaly lock
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Device is locked: true
+```
+
+To unlock keyboard run it with `-u` option and follow instructions
+
+```
+❯ vitaly lock -u
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Device is locked: true
+Starting unlock process...
+Push marked buttons and keep then pushed to unlock...
+...
+Seconds remaining: 0 keep pushing...
+Device is locked: false
+```
+
+To lock keyboard run it with `-l` option
+
+```
+❯ vitaly lock -l
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Locking keyboard...
+Device is locked: true
+```
+
 ### Settings subcommand
 
 Settings subcommand allows to list and alter keyboard settings.
@@ -239,6 +277,8 @@ Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
 3.2) Do not Auto Shift special keys = true
 ```
 
+It also allows to reset all settings to default values if called with option --reset/-r.
+
 ### Layers subcommand
 
 Layers subcommand is designed to help with visual layers dumping
@@ -344,6 +384,8 @@ Layer: 2
 *1 - QK_LAYER_LOCK
 ```
 
+Flag --options/-o allows to override layout options for the dump. Format is `group,variant;group,variant`.
+
 For keyboards with vial protocol support vitaly downloads vial.json file straight from the keyboard.
 For via-only keyboards vitaly will try to download keyboard specification from https://github.com/the-via/keyboards/tree/master/src.
 If specification of via-only keyboard not published on the-via/keyboards or it doesn't match your firmware repository specification file can be passed with -m option.
@@ -377,6 +419,30 @@ Layer: 0
 ╚═══╝╚═══╝╚═══╝╚═══════════════════════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝
 *1 - QK_BACKLIGHT_STEP
 ```
+
+### Layout subcommand
+
+Layout subcommand allows to list and alter layout options.
+
+```
+❯ vitaly -i 4 layout
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+Current layout options
+0) Split Backspace:
+	0) false <= currently selected
+	1) true
+1) Split Left Shift:
+	0) false <= currently selected
+	1) true
+2) Split Right Shift:
+	0) false <= currently selected
+	1) true
+```
+
+To alter layout option use `-o` and `-v` options
+
 
 ### Keys subcommand
 
@@ -789,6 +855,29 @@ current settings:
 RGB settings updated...
 ```
 
+Set brightness
+
+```
+❯ vitaly -i 4 rgb -b 100
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+RGB settings updated...
+```
+
+List supported effects
+
+```
+❯ vitaly -i 4 rgb -l
+...
+```
+
+Direct LED control (only if effect is "Direct Control", usually id 1)
+
+```
+❯ vitaly -i 4 rgb -d '0-5=#ffffff;6=#0000ff'
+```
+
 Set effect color
 
 ```
@@ -841,6 +930,8 @@ Configutaion saved to file silakka54.vil
 ### Load subcommand
 
 Load subcommans loads keyboard configuration from file.
+
+Flag -p allows to preview content of layout file instead of loading into keyboard.
 
 ```
 ❯ vitaly -i 4626 load -f silakka54.vil
@@ -909,3 +1000,7 @@ Tap buttons. Press Ctrl+c to finish.
                 ║3 ║ ║4 ║  ║5 ║    ║5 ║  ║4 ║ ║3 ║
                 ╚══╝ ╚══╝  ╚══╝    ╚══╝  ╚══╝ ╚══╝
 ```
+
+### Bootload subcommand
+
+Bootload subcommand allows to push keyboard into bootloader mode.
