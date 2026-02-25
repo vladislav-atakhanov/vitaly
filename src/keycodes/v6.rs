@@ -76,6 +76,9 @@ pub fn name_to_qid(name: &str) -> Result<u16> {
             "LCA" => {
                 keycode = 0x0500u16 | name_to_qid(&right.to_string())?;
             }
+            "LCG" => {
+                keycode = 0x0900u16 | name_to_qid(&right.to_string())?;
+            }
             "LSA" => {
                 keycode = 0x0600u16 | name_to_qid(&right.to_string())?;
             }
@@ -84,6 +87,9 @@ pub fn name_to_qid(name: &str) -> Result<u16> {
             }
             "RCS" => {
                 keycode = 0x1300u16 | name_to_qid(&right.to_string())?;
+            }
+            "RCG" => {
+                keycode = 0x01900u16 | name_to_qid(&right.to_string())?;
             }
             "TO" => {
                 keycode = 0x5200 | (parse_layer(&right)? & 0x1F);
@@ -451,6 +457,12 @@ pub fn qid_to_name(keycode: u16) -> String {
             dest.push_str(&qid_to_name(keycode & 0xFF));
             dest.push(')');
         }
+        // LCG 0x0900
+        0x0900..=0x09FF => {
+            dest.push_str("LCG(");
+            dest.push_str(&qid_to_name(keycode & 0xFF));
+            dest.push(')');
+        }
         // LCA 0x0500
         0x0500..=0x05FF => {
             dest.push_str("LCA(");
@@ -472,6 +484,12 @@ pub fn qid_to_name(keycode: u16) -> String {
         // RCS 0x1300
         0x1300..=0x13FF => {
             dest.push_str("RCS(");
+            dest.push_str(&qid_to_name(keycode & 0xFF));
+            dest.push(')');
+        }
+        // RCG 0x1900
+        0x01900..=0x019FF => {
+            dest.push_str("RCG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
             dest.push(')');
         }
